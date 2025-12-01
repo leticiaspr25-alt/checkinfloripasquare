@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Floripa Square Check-in</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #000000;
+            color: #FFFFFF;
+            line-height: 1.6;
+        }
+
+        #root {
+            min-height: 100vh;
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .print-label, .print-label * {
+                visibility: visible;
+            }
+            .print-label {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 340px;
+                height: 132px;
+                background: white;
+                color: black;
+                padding: 16px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                font-family: Arial, sans-serif;
+            }
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background-color: #f37021;
+            color: #000000;
+        }
+
+        .btn-primary:hover {
+            background-color: #e86315;
+        }
+
+        .btn-secondary {
+            background-color: #262626;
+            color: #FFFFFF;
+            border: 1px solid #444;
+        }
+
+        .btn-secondary:hover {
+            background-color: #333333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background-color: #111111;
+            border-bottom: 2px solid #262626;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin: 0;
+        }
+
+        .card {
+            background-color: #262626;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+
+        .stat-card {
+            background-color: #1a1a1a;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            border-left: 4px solid #f37021;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #999999;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 12px;
+            background-color: #1a1a1a;
+            border: 1px solid #444;
+            border-radius: 8px;
+            color: #FFFFFF;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #f37021;
+            box-shadow: 0 0 0 3px rgba(243, 112, 33, 0.2);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #262626;
+        }
+
+        .tab-button {
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            color: #999999;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab-button.active {
+            color: #f37021;
+            border-bottom-color: #f37021;
+        }
+
+        .guest-card {
+            background-color: #262626;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .guest-info {
+            flex: 1;
+        }
+
+        .guest-name {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .guest-company {
+            font-size: 12px;
+            color: #999999;
+        }
+
+        .guest-status {
+            font-size: 12px;
+            margin-top: 4px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .guest-status.checked {
+            background-color: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .guest-status.pending {
+            background-color: rgba(153, 153, 153, 0.2);
+            color: #999999;
+        }
+
+        .login-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #000000;
+        }
+
+        .login-card {
+            background-color: #262626;
+            border-radius: 12px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 25px rgba(0, 0, 0, 0.5);
+        }
+
+        .login-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            color: #999999;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .public-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #000000;
+        }
+
+        .public-card {
+            background-color: #262626;
+            border-radius: 12px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .success-message {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .success-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .qr-container {
+            text-align: center;
+            margin: 30px 0;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .qr-box {
+            flex: 1;
+            max-width: 200px;
+        }
+
+        .qr-image {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .qr-label {
+            font-size: 12px;
+            color: #999999;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 24px;
+            background-color: #1a1a1a;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .dropzone {
+            border: 2px dashed #f37021;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            background-color: rgba(243, 112, 33, 0.05);
+            transition: all 0.3s;
+            margin-bottom: 15px;
+        }
+
+        .dropzone:hover {
+            background-color: rgba(243, 112, 33, 0.1);
+        }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 12px;
+            background-color: #1a1a1a;
+            border: 1px solid #444;
+            border-radius: 8px;
+            color: #FFFFFF;
+            font-size: 14px;
+            margin-bottom: 15px;
+            font-family: Arial, sans-serif;
+            resize: vertical;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #f37021;
+            box-shadow: 0 0 0 3px rgba(243, 112, 33, 0.2);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .btn-group .btn {
+            flex: 1;
+        }
+
+        .error {
+            color: #ef4444;
+            font-size: 12px;
+            margin-top: -10px;
+            margin-bottom: 10px;
+        }
+
+        .success {
+            color: #10b981;
+            font-size: 12px;
+            margin-top: -10px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        const App = () => {
+            const [currentPage, setCurrentPage] = useState('login');
+            const [currentUser, setCurrentUser] = useState(null);
+            const [currentEventId, setCurrentEventId] = useState(null);
+            const [events, setEvents] = useState([]);
+            const [guests, setGuests] = useState([]);
+            const [users, setUsers] = useState([]);
+
+            const handleLogin = (email, password) => {
+                if (!email || password.length < 4) {
+                    alert('Email e senha inválidos');
+                    return;
+                }
+                const user = users.find(u => u.email === email && u.password === password);
+                if (user) {
+                    setCurrentUser(user);
+                    setCurrentPage('dashboard');
+                } else {
+                    alert('Email ou senha incorretos');
+                }
+            };
+
+            const handleRegister = (email, password, confirmPassword) => {
+                if (!email || password.length < 6 || password !== confirmPassword) {
+                    alert('Preencha corretamente');
+                    return;
+                }
+                const newUser = { id: Date.now(), email, password, role: 'admin' };
+                setUsers([...users, newUser]);
+                alert('Conta criada com sucesso!');
+                setCurrentPage('login');
+            };
+
+            const handleLogout = () => {
+                setCurrentUser(null);
+                setCurrentPage('login');
+                setCurrentEventId(null);
+            };
+
+            const handleCreateEvent = (name, date) => {
+                const newEvent = {
+                    id: Date.now().toString(),
+                    name,
+                    date,
+                    qr_code: { wifi: {}, photos: {} }
+                };
+                setEvents([...events, newEvent]);
+                setCurrentPage('dashboard');
+            };
+
+            const handleCheckIn = (guestId) => {
+                const now = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                setGuests(guests.map(g => g.id === guestId ? { ...g, checked_in: true, checkin_time: now } : g));
+            };
+
+            if (currentPage === 'login') {
+                return <LoginPage onLogin={handleLogin} onCreateAccount={() => setCurrentPage('createAccount')} />;
+            }
+
+            if (currentPage === 'createAccount') {
+                return <CreateAccountPage onRegister={handleRegister} onBack={() => setCurrentPage('login')} />;
+            }
+
+            if (currentPage === 'dashboard' && currentUser) {
+                return (
+                    <div>
+                        <header className="header">
+                            <h1>Floripa Square Check-in</h1>
+                            <button className="btn btn-secondary" onClick={handleLogout}>Logout</button>
+                        </header>
+                        <div className="container">
+                            {!currentEventId ? (
+                                <div>
+                                    <h2 style={{ marginBottom: '20px' }}>Meus Eventos</h2>
+                                    <button className="btn btn-primary" onClick={() => setCurrentPage('createEvent')} style={{ marginBottom: '20px' }}>
+                                        + Criar Novo Evento
+                                    </button>
+                                    <div className="grid grid-2">
+                                        {events.map(event => (
+                                            <div key={event.id} className="card">
+                                                <h3>{event.name}</h3>
+                                                <p style={{ color: '#999999', fontSize: '12px', margin: '10px 0' }}>{event.date}</p>
+                                                <button
+                                                    className="btn btn-primary"
+                                                    style={{ marginTop: '15px', width: '100%' }}
+                                                    onClick={() => setCurrentEventId(event.id)}
+                                                >
+                                                    Gerenciar
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : (
+                                <EventManagerPage
+                                    event={events.find(e => e.id === currentEventId)}
+                                    guests={guests.filter(g => g.event_id === currentEventId)}
+                                    onBack={() => setCurrentEventId(null)}
+                                    onCheckIn={handleCheckIn}
+                                    onAddGuests={(newGuests) => {
+                                        setGuests([...guests, ...newGuests]);
+                                    }}
+                                />
+                            )}
+                        </div>
+                    </div>
+                );
+            }
+
+            if (currentPage === 'createEvent' && currentUser) {
+                return (
+                    <div>
+                        <header className="header">
+                            <h1>Floripa Square Check-in</h1>
+                        </header>
+                        <div className="container">
+                            <CreateEventForm
+                                onCreate={(name, date) => {
+                                    handleCreateEvent(name, date);
+                                }}
+                                onCancel={() => setCurrentPage('dashboard')}
+                            />
+                        </div>
+                    </div>
+                );
+            }
+
+            if (currentPage === 'publicCheckin') {
+                const event = events.find(e => e.id === currentEventId);
+                return <PublicCheckinPage eventId={currentEventId} event={event} onBack={() => setCurrentPage('dashboard')} onAddGuest={(guest) => setGuests([...guests, guest])} />;
+            }
+
+            return null;
+        };
+
+        const LoginPage = ({ onLogin, onCreateAccount }) => {
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+
+            return (
+                <div className="login-container">
+                    <div className="login-card">
+                        <div className="login-title">Floripa Square Check-in</div>
+                        <div className="form-group">
+                            <label className="form-label">Email</label>
+                            <input type="email" className="input-field" placeholder="seu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">Senha</label>
+                            <input type="password" className="input-field" placeholder="senha" value={password} onChange={(e) => setPassword(e.target.value)} />
+                        </div>
+                        <button className="btn btn-primary" style={{ width: '100%', marginBottom: '10px' }} onClick={() => onLogin(email, password)}>
+                            Entrar
+                        </button>
+                        <button className="btn btn-secondary" style={{ width: '100%' }} onClick={onCreateAccount}>
+                            Criar Conta
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const CreateAccountPage = ({ onRegister, onBack }) => {
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+            const [confirmPassword, setConfirmPassword] = useState('');
+
+            return (
+                <div className="login-container">
+                    <div className="login-card">
+                        <div className="login-title">Criar Nova Conta</div>
+                        <div className="form-group">
+                            <label className="form-label">Email</label>
+                            <input type="email" className="input-field" placeholder="seu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">Senha</label>
+                            <input type="password" className="input-field" placeholder="mínimo 6 caracteres" value={password} onChange={(e) => setPassword(e.target.value)} />
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">Confirmar Senha</label>
+                            <input type="password" className="input-field" placeholder="confirme a senha" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                        </div>
+                        <button className="btn btn-primary" style={{ width: '100%', marginBottom: '10px' }} onClick={() => onRegister(email, password, confirmPassword)}>
+                            Registrar
+                        </button>
+                        <button className="btn btn-secondary" style={{ width: '100%' }} onClick={onBack}>
+                            Voltar
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const CreateEventForm = ({ onCreate, onCancel }) => {
+            const [name, setName] = useState('');
+            const [date, setDate] = useState('');
+
+            return (
+                <div className="card" style={{ maxWidth: '500px', margin: '0 auto' }}>
+                    <h2 style={{ marginBottom: '20px' }}>Criar Novo Evento</h2>
+                    <div className="form-group">
+                        <label className="form-label">Nome do Evento</label>
+                        <input type="text" className="input-field" placeholder="ex: Tech Summit 2025" value={name} onChange={(e) => setName(e.target.value)} />
+                    </div>
+                    <div className="form-group">
+                        <label className="form-label">Data</label>
+                        <input type="date" className="input-field" value={date} onChange={(e) => setDate(e.target.value)} />
+                    </div>
+                    <div className="btn-group">
+                        <button className="btn btn-primary" onClick={() => onCreate(name, date)}>Criar</button>
+                        <button className="btn btn-secondary" onClick={onCancel}>Cancelar</button>
+                    </div>
+                </div>
+            );
+        };
+
+        const EventManagerPage = ({ event, guests, onBack, onCheckIn, onAddGuests }) => {
+            const [activeTab, setActiveTab] = useState('guests');
+            const [searchTerm, setSearchTerm] = useState('');
+
+            if (!event) return null;
+
+            const filteredGuests = guests.filter(g => g.name && g.name.toLowerCase().includes(searchTerm.toLowerCase()));
+            const checkedInCount = guests.filter(g => g.checked_in).length;
+            const absentCount = guests.length - checkedInCount;
+            const attendanceRate = guests.length > 0 ? Math.round((checkedInCount / guests.length) * 100) : 0;
+
+            return (
+                <div>
+                    <button className="btn btn-secondary" style={{ marginBottom: '20px' }} onClick={onBack}>
+                        ← Voltar
+                    </button>
+                    <h2 style={{ marginBottom: '20px' }}>{event.name}</h2>
+
+                    <div className="tabs">
+                        <button className={`tab-button ${activeTab === 'guests' ? 'active' : ''}`} onClick={() => setActiveTab('guests')}>
+                            Convidados
+                        </button>
+                        <button className={`tab-button ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}>
+                            Configurações
+                        </button>
+                        <button className={`tab-button ${activeTab === 'reception' ? 'active' : ''}`} onClick={() => setActiveTab('reception')}>
+                            Recepção
+                        </button>
+                    </div>
+
+                    {activeTab === 'guests' && (
+                        <div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '20px', marginBottom: '30px' }}>
+                                <div className="stat-card" style={{ borderLeftColor: '#10b981' }}>
+                                    <div className="stat-label">✓ Presentes</div>
+                                    <div className="stat-number">{checkedInCount}</div>
+                                </div>
+                                <div className="stat-card" style={{ borderLeftColor: '#ef4444' }}>
+                                    <div className="stat-label">✗ Ausentes</div>
+                                    <div className="stat-number">{absentCount}</div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-label">👥 Total</div>
+                                    <div className="stat-number">{guests.length}</div>
+                                </div>
+                            </div>
+
+                            <div className="card">
+                                <div style={{ marginBottom: '15px' }}>
+                                    <strong>Taxa de Presença: {attendanceRate}%</strong>
+                                </div>
+                                <div className="progress-bar">
+                                    <div className="progress-fill" style={{ width: `${attendanceRate}%` }}>
+                                        {attendanceRate > 20 && `${attendanceRate}%`}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="card">
+                                <input type="text" className="input-field" placeholder="Buscar convidado..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                                {filteredGuests.map(guest => (
+                                    <div key={guest.id} className="guest-card">
+                                        <div className="guest-info">
+                                            <div className="guest-name">{guest.name}</div>
+                                            <div className="guest-company">{guest.company} • {guest.position}</div>
+                                            <div className={`guest-status ${guest.checked_in ? 'checked' : 'pending'}`}>
+                                                {guest.checked_in ? `✓ ${guest.checkin_time}` : '○ Não compareceu'}
+                                            </div>
+                                        </div>
+                                        <button className="btn btn-primary" style={{ marginLeft: '10px' }} onClick={() => onCheckIn(guest.id)}>
+                                            Check-in
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'settings' && (
+                        <div className="card">
+                            <h3 style={{ marginBottom: '20px' }}>CONFIGURAÇÕES DO EVENTO</h3>
+
+                            <div style={{ marginBottom: '30px' }}>
+                                <h4 style={{ marginBottom: '15px' }}>📡 QR CODE DO WiFi</h4>
+                                <textarea placeholder="WiFi: Seu-WiFi&#10;Senha: 123456" />
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button className="btn btn-primary">Gerar QR</button>
+                                    <button className="btn btn-secondary">Anexar Imagem</button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h4 style={{ marginBottom: '15px' }}>📷 QR CODE DAS FOTOS</h4>
+                                <textarea placeholder="https://photos.example.com" />
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button className="btn btn-primary">Gerar QR</button>
+                                    <button className="btn btn-secondary">Anexar Imagem</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'reception' && (
+                        <div className="card">
+                            <h3 style={{ marginBottom: '20px', textAlign: 'center' }}>TOTEM RECEPÇÃO</h3>
+                            <div style={{ textAlign: 'center', padding: '40px' }}>
+                                <p style={{ marginBottom: '20px', fontSize: '18px' }}>Aponte para o QR Code abaixo</p>
+                                <div style={{ backgroundColor: '#1a1a1a', padding: '20px', borderRadius: '12px', display: 'inline-block' }}>
+                                    <div style={{ width: '300px', height: '300px', backgroundColor: '#FFFFFF', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <span style={{ color: '#000', fontSize: '12px' }}>QR Code Aqui</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const PublicCheckinPage = ({ eventId, event, onBack, onAddGuest }) => {
+            const [firstName, setFirstName] = useState('');
+            const [lastName, setLastName] = useState('');
+            const [company, setCompany] = useState('');
+            const [position, setPosition] = useState('');
+            const [success, setSuccess] = useState(false);
+
+            if (!event) return null;
+
+            if (success) {
+                return (
+                    <div className="public-page">
+                        <div className="public-card">
+                            <div className="success-message">
+                                <div className="success-icon">✓</div>
+                                <h2>Bem-vindo, {firstName} {lastName}!</h2>
+                            </div>
+                            <div className="qr-container">
+                                <div className="qr-box">
+                                    <div style={{ width: '100%', height: '200px', backgroundColor: '#1a1a1a', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <span style={{ color: '#999' }}>QR WiFi</span>
+                                    </div>
+                                    <div className="qr-label">Conectar Wi-Fi</div>
+                                </div>
+                                <div className="qr-box">
+                                    <div style={{ width: '100%', height: '200px', backgroundColor: '#1a1a1a', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <span style={{ color: '#999' }}>QR Fotos</span>
+                                    </div>
+                                    <div className="qr-label">Ver Fotos</div>
+                                </div>
+                            </div>
+                            <button className="btn btn-secondary" style={{ width: '100%', marginTop: '20px' }} onClick={() => setSuccess(false)}>
+                                ← Voltar
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="public-page">
+                    <div className="public-card">
+                        <h2 style={{ marginBottom: '30px', textAlign: 'center' }}>Bem-vindo ao {event.name}!</h2>
+
+                        <div className="form-group">
+                            <label className="form-label">Nome</label>
+                            <input type="text" className="input-field" placeholder="Seu nome" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                        </div>
+
+                        <div className="form-group">
+                            <label className="form-label">Sobrenome</label>
+                            <input type="text" className="input-field" placeholder="Seu sobrenome" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                        </div>
+
+                        <div className="form-group">
+                            <label className="form-label">Empresa</label>
+                            <input type="text" className="input-field" placeholder="Sua empresa" value={company} onChange={(e) => setCompany(e.target.value)} />
+                        </div>
+
+                        <div className="form-group">
+                            <label className="form-label">Cargo</label>
+                            <input type="text" className="input-field" placeholder="Seu cargo" value={position} onChange={(e) => setPosition(e.target.value)} />
+                        </div>
+
+                        <button
+                            className="btn btn-primary"
+                            style={{ width: '100%' }}
+                            onClick={() => {
+                                if (firstName && lastName && company && position) {
+                                    onAddGuest({
+                                        id: Date.now().toString(),
+                                        name: `${firstName} ${lastName}`,
+                                        company,
+                                        position,
+                                        event_id: eventId,
+                                        checked_in: true,
+                                        checkin_time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+                                    });
+                                    setSuccess(true);
+                                    setTimeout(() => window.print(), 500);
+                                } else {
+                                    alert('Preencha todos os campos');
+                                }
+                            }}
+                        >
+                            Confirmar Presença
+                        </button>
+                    </div>
+
+                    <div className="print-label">
+                        <div style={{ fontSize: '16px', fontWeight: 'bold' }}>{firstName} {lastName}</div>
+                        <div style={{ fontSize: '10px', marginTop: '4px' }}>{company} • {position}</div>
+                        <div style={{ fontSize: '8px', marginTop: '8px', display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                            <span>QR WiFi</span>
+                            <span>QR Fotos</span>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
