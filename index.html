@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Floripa Square Check-in V5 (Final)</title>
+    <title>Floripa Square Check-in V7 (Nome Normal)</title>
     
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -66,7 +66,7 @@
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 100; display: flex; align-items: center; justify-content: center; }
         .modal-content { background: var(--surface); padding: 30px; border-radius: 12px; width: 100%; max-width: 400px; border: 1px solid var(--border); }
 
-        /* IMPRESSÃO (BEMATECH L42) */
+        /* IMPRESSÃO (BEMATECH L42 - 90x35mm) */
         @media print {
             body * { visibility: hidden; }
             #printable-area, #printable-area * { visibility: visible; }
@@ -76,11 +76,23 @@
                 display: flex !important; flex-direction: column; justify-content: center; align-items: center;
                 text-align: center; margin: 0; padding: 0;
             }
-            @page { size: 100mm 50mm; margin: 0; }
+            @page { size: 90mm 35mm; margin: 0; }
         }
-        #printable-area { display: none; width: 100mm; height: 50mm; }
-        .print-name { font-size: 22pt; font-weight: 900; font-family: Arial, sans-serif; line-height: 1.1; margin-bottom: 5mm; text-transform: uppercase; }
-        .print-company { font-size: 12pt; font-family: Arial, sans-serif; }
+        
+        #printable-area { display: none; width: 90mm; height: 35mm; }
+        
+        .print-name { 
+            font-size: 20pt; 
+            font-weight: 900; 
+            font-family: Arial, sans-serif; 
+            line-height: 1.1; 
+            margin-bottom: 2mm; 
+            /* REMOVIDO: text-transform: uppercase; -> Agora aceita minúsculas */
+        }
+        .print-company { 
+            font-size: 11pt; 
+            font-family: Arial, sans-serif; 
+        }
 
     </style>
 </head>
@@ -109,7 +121,6 @@
         // --- APP PRINCIPAL ---
         const App = () => {
             const [view, setView] = useState('login');
-            // Dados Mockados Iniciais
             const [events, setEvents] = useState([
                 { id: 1, name: 'Lançamento BMW', date: '25/12/2025', wifi: 'WIFI:S:FloripaSquare;T:WPA;P:123;;', photoUrl: 'https://fotos.com' }
             ]);
@@ -118,7 +129,6 @@
                 { id: 1, name: 'Carlos CEO', company: 'Coca-Cola', checkedIn: false },
             ]);
 
-            // Checar URL para rotas
             useEffect(() => {
                 const params = new URLSearchParams(window.location.search);
                 const mode = params.get('mode');
@@ -132,8 +142,6 @@
                     }
                 }
             }, []);
-
-            // --- FUNÇÕES DE LÓGICA ---
 
             const handleLogin = (email) => setView('dashboard');
 
@@ -153,7 +161,6 @@
                 setGuests([{...newGuest, id: Date.now(), checkedIn: false}, ...guests]);
             };
 
-            // IMPORTAÇÃO EXCEL/CSV REAL
             const handleImportCSV = (file) => {
                 const reader = new FileReader();
                 reader.onload = (e) => {
@@ -162,21 +169,18 @@
                     const sheetName = workbook.SheetNames[0];
                     const sheet = workbook.Sheets[sheetName];
                     const json = XLSX.utils.sheet_to_json(sheet);
-                    
                     const newGuests = json.map((row, idx) => ({
                         id: Date.now() + idx,
                         name: row['Nome'] || row['Name'] || 'Sem Nome',
                         company: row['Empresa'] || row['Company'] || '',
                         checkedIn: false
                     }));
-                    
                     setGuests([...guests, ...newGuests]);
                     alert(`${newGuests.length} convidados importados!`);
                 };
                 reader.readAsArrayBuffer(file);
             };
 
-            // EXPORTAÇÃO EXCEL REAL
             const handleExportXLSX = () => {
                 const ws = XLSX.utils.json_to_sheet(guests.map(g => ({
                     Nome: g.name,
@@ -189,7 +193,6 @@
                 XLSX.writeFile(wb, `${currentEvent.name}_Relatorio.xlsx`);
             };
 
-            // --- RENDER ---
             if (view === 'login') return <LoginScreen onLogin={handleLogin} />;
             if (view === 'totem') return <TotemScreen event={currentEvent} />;
             if (view === 'guest') return <GuestScreen event={currentEvent} />;
@@ -233,8 +236,6 @@
             );
         };
 
-        // --- TELAS SECUNDÁRIAS ---
-
         const LoginScreen = ({ onLogin }) => {
             const [email, setEmail] = useState('');
             const [isRegister, setIsRegister] = useState(false);
@@ -260,13 +261,8 @@
             const [wifi, setWifi] = useState(event.wifi || '');
             const [photo, setPhoto] = useState(event.photoUrl || '');
             const fileRef = useRef();
-
             const filtered = guests.filter(g => g.name.toLowerCase().includes(search.toLowerCase()));
-
-            const openTotem = () => {
-                const url = `?mode=totem&event=${event.id}`;
-                window.open(url, '_blank');
-            };
+            const openTotem = () => { window.open(`?mode=totem&event=${event.id}`, '_blank'); };
 
             return (
                 <div>
