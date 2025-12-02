@@ -3,375 +3,680 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Floripa Square Check-in V8 (Fix Impressão)</title>
+    <title>Floripa Square Check-in Ultimate</title>
     
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
-    <style>
-        /* --- ESTILOS VISUAIS (Floripa Square Night) --- */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background-color: #000000; color: #ffffff; line-height: 1.6; }
-        :root { --primary: #f37021; --surface: #262626; --border: #404040; }
-
-        /* Utils */
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-        .flex { display: flex; gap: 10px; }
-        .between { justify-content: space-between; }
-        .center { align-items: center; }
-        .hidden { display: none !important; }
-
-        /* Componentes */
-        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
-        .btn { padding: 10px 20px; border-radius: 6px; cursor: pointer; border: none; font-weight: bold; color: white; font-size: 14px; transition: 0.2s; }
-        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
-        .btn-primary { background: var(--primary); }
-        .btn-outline { background: transparent; border: 1px solid #666; color: #ccc; }
-        input, textarea { width: 100%; padding: 12px; background: #111; border: 1px solid #444; color: white; border-radius: 6px; margin-bottom: 10px; }
-
-        /* Login */
-        .login-wrapper { height: 100vh; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle, #222 0%, #000 100%); }
-        .login-card { background: var(--surface); padding: 40px; border-radius: 12px; width: 100%; max-width: 400px; border: 1px solid var(--border); }
-
-        /* Abas */
-        .tabs { display: flex; border-bottom: 1px solid #444; margin-bottom: 20px; }
-        .tab { padding: 10px 20px; cursor: pointer; color: #888; border-bottom: 3px solid transparent; }
-        .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
-
-        /* Totem & Guest */
-        .totem-screen { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #000; text-align: center; }
-        .qr-frame { background: white; padding: 20px; border-radius: 12px; margin: 30px 0; }
-        .guest-screen { max-width: 480px; margin: 0 auto; padding: 30px 20px; min-height: 100vh; background: #000; }
-        .success-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
-        .qr-box { background: #1a1a1a; padding: 15px; border-radius: 10px; text-align: center; border: 1px solid #333; }
-        .qr-box canvas { width: 100% !important; height: auto !important; }
-
-        /* Modal */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 100; display: flex; align-items: center; justify-content: center; }
-        .modal-content { background: var(--surface); padding: 30px; border-radius: 12px; width: 100%; max-width: 400px; border: 1px solid var(--border); }
-
-        /* --- CSS DE IMPRESSÃO CORRIGIDO --- */
-        @media print {
-            /* 1. Remove TUDO do fluxo da página */
-            #root, .app-container, header, .container {
-                display: none !important;
-            }
-            
-            /* 2. Reseta o corpo para evitar páginas extras */
-            html, body {
-                margin: 0; padding: 0; height: auto; overflow: hidden; background: white;
-            }
-
-            /* 3. Mostra SÓ a etiqueta */
-            #printable-area {
-                display: flex !important;
-                position: fixed; /* Fixa no topo absoluto */
-                top: 0;
-                left: 0;
-                width: 90mm;
-                height: 35mm;
-                background: white !important;
-                color: black !important;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-                text-align: center;
-                z-index: 9999;
-            }
-            
-            #printable-area * {
-                visibility: visible !important;
-            }
-
-            /* Define o tamanho exato da folha para o navegador */
-            @page {
-                size: 90mm 35mm;
-                margin: 0;
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        background: '#000000',
+                        surface: '#1A1A1A',
+                        border: '#333333',
+                        primary: '#f37021',
+                        'primary-hover': '#d95d10',
+                        muted: '#A3A3A3'
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                }
             }
         }
+    </script>
+
+    <style>
+        /* CSS GERAL */
+        body { background-color: #000000; color: white; font-family: 'Inter', sans-serif; }
         
+        /* IMPRESSÃO BEMATECH (90x35mm - FRENTE E VERSO) */
+        @media print {
+            body * { visibility: hidden; }
+            #printable-area, #printable-area * { visibility: visible !important; }
+            #root { display: none !important; }
+            
+            html, body { margin: 0; padding: 0; background: white; height: auto; overflow: hidden; }
+            
+            #printable-area {
+                position: fixed; top: 0; left: 0; width: 100%;
+                display: block !important;
+            }
+
+            .print-page {
+                width: 90mm; height: 35mm;
+                page-break-after: always; /* Quebra Obrigatória */
+                display: flex; flex-direction: column;
+                justify-content: center; align-items: center; text-align: center;
+                background: white; color: black;
+                overflow: hidden;
+            }
+            .print-page:last-child { page-break-after: auto; }
+
+            /* Fontes Otimizadas para não quebrar */
+            .print-name { font-family: 'Arial Narrow', sans-serif; font-weight: 900; font-size: 18pt; line-height: 1; margin-bottom: 2mm; width: 85mm; white-space: nowrap; overflow: hidden; }
+            .print-info { font-family: Arial, sans-serif; font-size: 10pt; width: 85mm; white-space: nowrap; overflow: hidden; }
+
+            @page { size: 90mm 35mm; margin: 0; }
+        }
         #printable-area { display: none; }
         
-        .print-name { 
-            font-size: 18pt; /* Ajustado para caber melhor */
-            font-weight: 900; 
-            font-family: Arial, sans-serif; 
-            line-height: 1.1; 
-            margin-bottom: 2mm; 
-        }
-        .print-company { 
-            font-size: 10pt; 
-            font-family: Arial, sans-serif; 
-        }
-
+        /* Utilitários de Scroll */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <div id="printable-area">
-        <div class="print-name" id="print-name-target">NOME</div>
-        <div class="print-company" id="print-company-target">EMPRESA</div>
+        <div class="print-page">
+            <div class="print-name" id="p-name-1">NOME</div>
+            <div class="print-info" id="p-company-1">EMPRESA</div>
+        </div>
+        <div class="print-page">
+            <div class="print-name" id="p-name-2">NOME</div>
+            <div class="print-info" id="p-company-2">EMPRESA</div>
+        </div>
     </div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
-
-        const QRCodeDisplay = ({ text, size = 200 }) => {
-            const canvasRef = useRef();
-            useEffect(() => {
-                if(canvasRef.current && text) {
-                    QRCode.toCanvas(canvasRef.current, text, { width: size, margin: 1 }, (err) => { if(err) console.error(err); });
+        const { useState, useEffect, useRef, useMemo } = React;
+        
+        // --- SIMULAÇÃO DE BACKEND (DB LOCAL) ---
+        const DB = {
+            KEYS: { USER: 'fs_user', EVENTS: 'fs_events', GUESTS: 'fs_guests', LOGS: 'fs_logs' },
+            
+            // Auth
+            login: (email, pass) => {
+                if(pass === '123456') {
+                    const user = { email, role: email.includes('admin') ? 'admin' : 'staff' };
+                    localStorage.setItem(DB.KEYS.USER, JSON.stringify(user));
+                    return user;
                 }
-            }, [text, size]);
-            return <canvas ref={canvasRef} />;
+                return null;
+            },
+            logout: () => localStorage.removeItem(DB.KEYS.USER),
+            getUser: () => JSON.parse(localStorage.getItem(DB.KEYS.USER)),
+
+            // Data
+            getEvents: () => JSON.parse(localStorage.getItem(DB.KEYS.EVENTS) || '[]'),
+            saveEvents: (data) => { localStorage.setItem(DB.KEYS.EVENTS, JSON.stringify(data)); window.dispatchEvent(new Event('db_update')); },
+            
+            getGuests: () => JSON.parse(localStorage.getItem(DB.KEYS.GUESTS) || '[]'),
+            saveGuests: (data) => { localStorage.setItem(DB.KEYS.GUESTS, JSON.stringify(data)); window.dispatchEvent(new Event('db_update')); },
+
+            getLogs: () => JSON.parse(localStorage.getItem(DB.KEYS.LOGS) || '[]'),
+            addLog: (action, details) => {
+                const user = DB.getUser();
+                const logs = DB.getLogs();
+                const newLog = { 
+                    id: Date.now(), 
+                    user: user ? user.email : 'Sistema/Guest', 
+                    action, details, 
+                    time: new Date().toLocaleString('pt-BR') 
+                };
+                localStorage.setItem(DB.KEYS.LOGS, JSON.stringify([newLog, ...logs]));
+            }
         };
 
+        // --- COMPONENTES UI ---
+        const Icon = ({ name, size=20, className }) => {
+            useEffect(() => lucide.createIcons(), []);
+            return <i data-lucide={name} width={size} height={size} className={className}></i>;
+        };
+
+        const Card = ({ children, className }) => <div className={`bg-surface border border-border rounded-xl p-6 ${className}`}>{children}</div>;
+        
+        const Button = ({ children, variant='primary', onClick, className, icon }) => {
+            const base = "flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all duration-200";
+            const styles = {
+                primary: "bg-primary text-white hover:bg-primary-hover shadow-lg shadow-orange-900/20",
+                outline: "bg-transparent border border-gray-600 text-gray-300 hover:border-white hover:text-white",
+                ghost: "text-gray-400 hover:text-white hover:bg-white/5",
+                danger: "bg-red-500/10 text-red-500 border border-red-500/50 hover:bg-red-500/20"
+            };
+            return (
+                <button onClick={onClick} className={`${base} ${styles[variant]} ${className}`}>
+                    {icon && <Icon name={icon} size={18} />} {children}
+                </button>
+            );
+        };
+
+        const Input = ({ label, ...props }) => (
+            <div className="mb-4">
+                {label && <label className="block text-sm text-muted mb-2">{label}</label>}
+                <input {...props} className="w-full bg-[#111] border border-border rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors" />
+            </div>
+        );
+
+        const QRCodeCanvas = ({ text }) => {
+            const canvasRef = useRef();
+            useEffect(() => {
+                if(canvasRef.current && text) QRCode.toCanvas(canvasRef.current, text, { width: 200, margin: 1, color: { dark: '#000', light: '#fff' } });
+            }, [text]);
+            return <canvas ref={canvasRef} className="rounded-lg shadow-xl" />;
+        };
+
+        // --- APP CORE ---
         const App = () => {
-            const [view, setView] = useState('login');
-            const [events, setEvents] = useState([
-                { id: 1, name: 'Lançamento BMW', date: '25/12/2025', wifi: 'WIFI:S:FloripaSquare;T:WPA;P:123;;', photoUrl: 'https://fotos.com' }
-            ]);
+            const [user, setUser] = useState(DB.getUser());
+            const [view, setView] = useState('login'); // login, dashboard, manager, totem, wifi, guest
+            const [events, setEvents] = useState([]);
             const [currentEvent, setCurrentEvent] = useState(null);
-            const [guests, setGuests] = useState([{ id: 1, name: 'Carlos CEO', company: 'Coca-Cola', checkedIn: false }]);
+
+            // Sync de Dados (Realtime Simulado)
+            const syncData = () => {
+                setEvents(DB.getEvents());
+                // Se estiver no manager, atualiza convidados também (será feito no componente filho)
+            };
 
             useEffect(() => {
+                syncData();
+                window.addEventListener('db_update', syncData);
+                
+                // Checar Rotas Públicas na URL
                 const params = new URLSearchParams(window.location.search);
                 const mode = params.get('mode');
                 const evtId = parseInt(params.get('event'));
-                if (evtId) {
-                    const evt = events.find(e => e.id === evtId);
-                    if (evt) {
+                
+                if(evtId) {
+                    const allEvents = DB.getEvents();
+                    const evt = allEvents.find(e => e.id === evtId);
+                    if(evt) {
                         setCurrentEvent(evt);
-                        if(mode === 'totem') setView('totem');
-                        if(mode === 'guest') setView('guest');
+                        if(['totem', 'wifi', 'guest'].includes(mode)) setView(mode);
+                        else if(user) setView('manager');
                     }
+                } else if (user) {
+                    setView('dashboard');
                 }
+
+                return () => window.removeEventListener('db_update', syncData);
             }, []);
 
-            const handleLogin = (email) => setView('dashboard');
+            // Handlers
+            const handleLogin = (u) => { setUser(u); setView('dashboard'); };
+            const handleLogout = () => { DB.logout(); setUser(null); setView('login'); };
 
-            const toggleCheckIn = (id) => {
+            // Roteamento
+            if (view === 'login') return <AuthScreen onLogin={handleLogin} />;
+            if (view === 'totem') return <PublicTotem event={currentEvent} />;
+            if (view === 'wifi') return <PublicWifi event={currentEvent} />;
+            if (view === 'guest') return <PublicGuestMobile event={currentEvent} />;
+            
+            // Área Logada (Admin)
+            return (
+                <div className="min-h-screen bg-background text-white pb-20">
+                    <header className="border-b border-border bg-black/50 backdrop-blur sticky top-0 z-50">
+                        <div className="container mx-auto px-6 h-16 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 bg-primary rounded flex items-center justify-center font-bold">F</div>
+                                <span className="font-bold text-lg tracking-tight">FLORIPA SQUARE</span>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <span className="text-sm text-muted hidden md:block">Olá, {user?.email}</span>
+                                <Button variant="outline" onClick={handleLogout} className="text-xs py-1 px-3">Sair</Button>
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="container mx-auto px-4 py-8">
+                        {view === 'dashboard' && (
+                            <Dashboard 
+                                events={events} 
+                                onCreate={(ev) => {
+                                    const newEvents = [...events, { ...ev, id: Date.now(), total: 0 }];
+                                    DB.saveEvents(newEvents);
+                                    DB.addLog('create_event', `Criou evento ${ev.name}`);
+                                }}
+                                onSelect={(ev) => { setCurrentEvent(ev); setView('manager'); }} 
+                            />
+                        )}
+                        {view === 'manager' && currentEvent && (
+                            <EventManager 
+                                event={currentEvent} 
+                                onBack={() => setView('dashboard')}
+                                onUpdateEvent={(upd) => {
+                                    const newEvents = events.map(e => e.id === upd.id ? upd : e);
+                                    DB.saveEvents(newEvents);
+                                    setCurrentEvent(upd);
+                                }}
+                            />
+                        )}
+                    </main>
+                </div>
+            );
+        };
+
+        // --- TELAS ---
+
+        const AuthScreen = ({ onLogin }) => {
+            const [mode, setMode] = useState('login'); // login | signup
+            const [email, setEmail] = useState('');
+            const [pass, setPass] = useState('');
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if(mode === 'signup') {
+                    alert('Usuário criado! Faça login.');
+                    setMode('login');
+                } else {
+                    const user = DB.login(email, pass);
+                    if(user) onLogin(user);
+                    else alert('Senha incorreta (Use 123456)');
+                }
+            };
+
+            return (
+                <div className="h-screen flex items-center justify-center bg-[radial-gradient(circle_at_center,_#222_0%,_#000_100%)] p-4">
+                    <Card className="w-full max-w-md shadow-2xl border-none bg-[#111]">
+                        <div className="text-center mb-8">
+                            <h1 className="text-2xl font-bold text-white mb-1">FLORIPA SQUARE</h1>
+                            <p className="text-primary text-sm font-bold tracking-widest uppercase">Check-in System</p>
+                        </div>
+                        
+                        <div className="flex gap-4 mb-6 border-b border-border">
+                            {['login', 'signup'].map(m => (
+                                <button key={m} onClick={() => setMode(m)} className={`pb-2 text-sm font-medium transition-colors ${mode === m ? 'text-primary border-b-2 border-primary' : 'text-muted hover:text-white'}`}>
+                                    {m === 'login' ? 'Entrar' : 'Criar Conta'}
+                                </button>
+                            ))}
+                        </div>
+
+                        <form onSubmit={handleSubmit}>
+                            <Input label="Email Corporativo" placeholder="admin@floripasquare.com" value={email} onChange={e=>setEmail(e.target.value)} required />
+                            <Input label="Senha" type="password" placeholder="••••••" value={pass} onChange={e=>setPass(e.target.value)} required />
+                            {mode === 'signup' && <Input label="Confirmar Senha" type="password" placeholder="••••••" required />}
+                            
+                            <Button className="w-full mt-4 py-3">{mode === 'login' ? 'ACESSAR SISTEMA' : 'CADASTRAR EQUIPE'}</Button>
+                        </form>
+                        {mode === 'login' && <p className="text-center text-xs text-muted mt-4">Senha demo: 123456</p>}
+                    </Card>
+                </div>
+            );
+        };
+
+        const Dashboard = ({ events, onCreate, onSelect }) => {
+            const [showModal, setShowModal] = useState(false);
+            const [newEvt, setNewEvt] = useState({ name: '', date: '' });
+
+            return (
+                <div>
+                    <div className="flex justify-between items-center mb-8">
+                        <h2 className="text-3xl font-bold">Meus Eventos</h2>
+                        <Button icon="plus" onClick={() => setShowModal(true)}>Novo Evento</Button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {events.map(ev => (
+                            <div key={ev.id} onClick={() => onSelect(ev)} className="group bg-surface border border-border rounded-xl p-6 cursor-pointer hover:border-primary/50 transition-all hover:shadow-[0_0_30px_rgba(243,112,33,0.1)]">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="w-12 h-12 bg-white/5 rounded-lg flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                                        <Icon name="calendar" />
+                                    </div>
+                                    <span className="bg-white/10 text-xs px-2 py-1 rounded text-gray-300">
+                                        {new Date(ev.date).toLocaleDateString('pt-BR')}
+                                    </span>
+                                </div>
+                                <h3 className="text-xl font-bold text-white mb-1">{ev.name}</h3>
+                                <p className="text-sm text-muted">Gerenciar convidados e acessos</p>
+                            </div>
+                        ))}
+                    </div>
+
+                    {showModal && (
+                        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+                            <Card className="w-full max-w-md">
+                                <h3 className="text-xl font-bold mb-4">Criar Novo Evento</h3>
+                                <Input label="Nome do Evento" value={newEvt.name} onChange={e=>setNewEvt({...newEvt, name:e.target.value})} />
+                                <Input label="Data" type="date" value={newEvt.date} onChange={e=>setNewEvt({...newEvt, date:e.target.value})} />
+                                <div className="flex gap-2 mt-6">
+                                    <Button variant="outline" className="flex-1" onClick={() => setShowModal(false)}>Cancelar</Button>
+                                    <Button className="flex-1" onClick={() => { onCreate(newEvt); setShowModal(false); }}>Criar</Button>
+                                </div>
+                            </Card>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const EventManager = ({ event, onBack, onUpdateEvent }) => {
+            const [activeTab, setActiveTab] = useState('list');
+            const [guests, setGuests] = useState([]);
+            const [filter, setFilter] = useState('');
+            const fileInputRef = useRef();
+
+            // Sincronia de Convidados
+            const refreshGuests = () => {
+                const all = DB.getGuests();
+                setGuests(all.filter(g => g.eventId === event.id));
+            };
+
+            useEffect(() => {
+                refreshGuests();
+                window.addEventListener('db_update', refreshGuests);
+                return () => window.removeEventListener('db_update', refreshGuests);
+            }, [event.id]);
+
+            // Métricas
+            const total = guests.length;
+            const presentes = guests.filter(g => g.checkedIn).length;
+
+            // Ações
+            const toggleCheckIn = (guest) => {
+                const all = DB.getGuests();
                 const now = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
-                setGuests(guests.map(g => g.id === id ? { ...g, checkedIn: !g.checkedIn, time: !g.checkedIn ? now : null } : g));
+                const updated = all.map(g => g.id === guest.id ? { ...g, checkedIn: !g.checkedIn, time: !g.checkedIn ? now : null } : g);
+                DB.saveGuests(updated);
+                DB.addLog('checkin_toggle', `${!guest.checkedIn ? 'Entrou' : 'Saiu'}: ${guest.name}`);
             };
 
-            const handlePrint = (guest) => {
-                if(!guest.checkedIn) toggleCheckIn(guest.id);
-                document.getElementById('print-name-target').innerText = guest.name;
-                document.getElementById('print-company-target').innerText = guest.company || '';
-                setTimeout(() => window.print(), 100);
-            };
-
-            const handleAddManual = (newGuest) => {
-                setGuests([{...newGuest, id: Date.now(), checkedIn: false}, ...guests]);
-            };
-
-            const handleImportCSV = (file) => {
+            const handleImport = (file) => {
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const json = XLSX.utils.sheet_to_json(sheet);
+                    const wb = XLSX.read(e.target.result, {type:'array'});
+                    const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
                     const newGuests = json.map((row, idx) => ({
                         id: Date.now() + idx,
+                        eventId: event.id,
                         name: row['Nome'] || row['Name'] || 'Sem Nome',
                         company: row['Empresa'] || row['Company'] || '',
+                        role: row['Cargo'] || '',
                         checkedIn: false
                     }));
-                    setGuests([...guests, ...newGuests]);
-                    alert(`${newGuests.length} convidados importados!`);
+                    const all = DB.getGuests();
+                    DB.saveGuests([...all, ...newGuests]);
+                    DB.addLog('import_csv', `Importou ${newGuests.length} nomes`);
+                    alert(`${newGuests.length} importados!`);
                 };
                 reader.readAsArrayBuffer(file);
             };
 
-            const handleExportXLSX = () => {
-                const ws = XLSX.utils.json_to_sheet(guests.map(g => ({
-                    Nome: g.name, Empresa: g.company, Status: g.checkedIn ? 'PRESENTE' : 'AUSENTE', Horario: g.time || ''
-                })));
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Relatorio");
-                XLSX.writeFile(wb, `${currentEvent.name}_Relatorio.xlsx`);
+            const handlePrint = (guest) => {
+                if(!guest.checkedIn) toggleCheckIn(guest);
+                document.getElementById('p-name-1').innerText = guest.name;
+                document.getElementById('p-company-1').innerText = guest.company;
+                document.getElementById('p-name-2').innerText = guest.name;
+                document.getElementById('p-company-2').innerText = guest.company;
+                setTimeout(() => window.print(), 200);
+                DB.addLog('print', `Imprimiu: ${guest.name}`);
             };
 
-            if (view === 'login') return <LoginScreen onLogin={handleLogin} />;
-            if (view === 'totem') return <TotemScreen event={currentEvent} />;
-            if (view === 'guest') return <GuestScreen event={currentEvent} />;
-            
-            return (
-                <div>
-                    <header style={{background:'#000', borderBottom:'1px solid #333', padding:'15px 20px', display:'flex', justifyContent:'space-between'}}>
-                        <div style={{fontSize:20, fontWeight:'bold', color:'white'}}>MEGATELA</div>
-                        <button className="btn btn-outline" onClick={() => setView('login')}>Sair</button>
-                    </header>
-                    <div className="container">
-                        {view === 'dashboard' && (
-                            <div>
-                                <h2 style={{color:'white', marginBottom:20}}>Meus Eventos</h2>
-                                {events.map(ev => (
-                                    <div key={ev.id} className="card flex between center">
-                                        <div><h3>{ev.name}</h3><small style={{color:'#888'}}>{ev.date}</small></div>
-                                        <button className="btn btn-outline" onClick={() => { setCurrentEvent(ev); setView('manager'); }}>Gerenciar</button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                        {view === 'manager' && (
-                            <EventManager 
-                                event={currentEvent} guests={guests}
-                                onBack={() => setView('dashboard')}
-                                onCheckIn={toggleCheckIn} onPrint={handlePrint}
-                                onAddGuest={handleAddManual} onImport={handleImportCSV} onExport={handleExportXLSX}
-                                onUpdateEvent={(updated) => {
-                                    setEvents(events.map(e => e.id === updated.id ? updated : e));
-                                    setCurrentEvent(updated);
-                                    alert('Salvo!');
-                                }}
+            // Tabs Content
+            const renderList = () => (
+                <div className="space-y-6">
+                    {/* Metrics */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <Card className="flex flex-col items-center justify-center py-8">
+                            <span className="text-muted text-sm uppercase tracking-widest">Total</span>
+                            <span className="text-5xl font-bold text-white mt-2">{total}</span>
+                        </Card>
+                        <Card className="flex flex-col items-center justify-center py-8 border-primary/30 bg-primary/5">
+                            <span className="text-primary text-sm uppercase tracking-widest font-bold">Presentes</span>
+                            <span className="text-5xl font-bold text-primary mt-2">{presentes}</span>
+                        </Card>
+                    </div>
+
+                    {/* Toolbar */}
+                    <div className="flex flex-col md:flex-row justify-between gap-4">
+                        <div className="relative flex-1">
+                            <Icon name="search" className="absolute left-3 top-3.5 text-gray-500" size={18} />
+                            <input 
+                                className="w-full bg-[#1A1A1A] border border-border rounded-lg pl-10 pr-4 py-3 text-white focus:outline-none focus:border-primary"
+                                placeholder="Buscar por nome, empresa ou cargo..."
+                                value={filter}
+                                onChange={e => setFilter(e.target.value)}
                             />
-                        )}
+                        </div>
+                        <div className="flex gap-2">
+                            <Button variant="outline" icon="upload" onClick={() => fileInputRef.current.click()}>Importar</Button>
+                            <input type="file" hidden ref={fileInputRef} onChange={e => handleImport(e.target.files[0])} />
+                            <Button icon="user-plus" onClick={() => {
+                                const name = prompt("Nome:");
+                                if(name) {
+                                    const company = prompt("Empresa:");
+                                    const newG = { id: Date.now(), eventId: event.id, name, company, checkedIn: true, time: 'Agora' };
+                                    DB.saveGuests([...DB.getGuests(), newG]);
+                                }
+                            }}>Manual</Button>
+                        </div>
+                    </div>
+
+                    {/* Cards List */}
+                    <div className="space-y-3">
+                        {guests.filter(g => g.name.toLowerCase().includes(filter.toLowerCase())).map(g => (
+                            <div key={g.id} className="flex items-center justify-between bg-[#1A1A1A] border border-[#333] p-4 rounded-lg hover:border-gray-500 transition-colors">
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <h4 className="font-bold text-lg text-white">{g.name}</h4>
+                                        {g.checkedIn && <span className="bg-primary/20 text-primary text-[10px] uppercase font-bold px-2 py-0.5 rounded">Presente</span>}
+                                    </div>
+                                    <p className="text-sm text-gray-400">{g.company} {g.role && `• ${g.role}`}</p>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <button onClick={() => handlePrint(g)} className="text-gray-400 hover:text-white p-2 rounded-full hover:bg-white/10" title="Imprimir">
+                                        <Icon name="printer" />
+                                    </button>
+                                    
+                                    {/* Toggle Switch */}
+                                    <button 
+                                        onClick={() => toggleCheckIn(g)}
+                                        className={`w-14 h-8 rounded-full p-1 transition-colors duration-200 ease-in-out ${g.checkedIn ? 'bg-primary' : 'bg-gray-700'}`}
+                                    >
+                                        <div className={`w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-200 ${g.checkedIn ? 'translate-x-6' : 'translate-x-0'}`} />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
             );
-        };
 
-        // SUB-COMPONENTES
-        const LoginScreen = ({ onLogin }) => {
-            const [email, setEmail] = useState('');
-            const [isRegister, setIsRegister] = useState(false);
-            return (
-                <div className="login-wrapper">
-                    <div className="login-card">
-                        <h2 style={{color:'white', textAlign:'center', marginBottom:5}}>FLORIPA SQUARE</h2>
-                        <p style={{color:'var(--primary)', textAlign:'center', marginBottom:20, fontWeight:'bold'}}>CHECK-IN SYSTEM</p>
-                        <label>Email</label><input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="admin@floripasquare.com" />
-                        <label>Senha</label><input type="password" placeholder="••••••" />
-                        {isRegister && <><label>Confirmar Senha</label><input type="password" /></>}
-                        <button className="btn btn-primary" style={{width:'100%', marginTop:10}} onClick={() => onLogin(email)}>{isRegister ? 'CRIAR CONTA' : 'ENTRAR'}</button>
-                        <div style={{textAlign:'center', marginTop:15, color:'#888', fontSize:12, cursor:'pointer', textDecoration:'underline'}} onClick={() => setIsRegister(!isRegister)}>{isRegister ? 'Já tenho conta' : 'Criar nova conta'}</div>
+            const renderConfig = () => (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-6">
+                        <Card>
+                            <h3 className="text-lg font-bold text-primary mb-4">Dados do Wi-Fi</h3>
+                            <Input label="SSID (Nome da Rede)" value={event.wifiSSID || ''} onChange={e => onUpdateEvent({...event, wifiSSID: e.target.value})} />
+                            <Input label="Senha" value={event.wifiPass || ''} onChange={e => onUpdateEvent({...event, wifiPass: e.target.value})} />
+                            <Input label="String QR Code (Raw)" value={event.wifi || ''} onChange={e => onUpdateEvent({...event, wifi: e.target.value})} placeholder="WIFI:S:Nome;T:WPA;P:Senha;;" />
+                        </Card>
+                        <Card>
+                            <h3 className="text-lg font-bold text-primary mb-4">Galeria de Fotos</h3>
+                            <Input label="Link Externo" value={event.photoUrl || ''} onChange={e => onUpdateEvent({...event, photoUrl: e.target.value})} />
+                        </Card>
+                    </div>
+                    <div className="space-y-6">
+                        <Card>
+                            <h3 className="text-lg font-bold text-primary mb-4">Telas Públicas</h3>
+                            <div className="grid grid-cols-2 gap-4">
+                                <Button variant="outline" className="h-24 flex-col gap-2" onClick={() => window.open(`?mode=totem&event=${event.id}`, '_blank')}>
+                                    <Icon name="monitor" size={32} /> Abrir Totem
+                                </Button>
+                                <Button variant="outline" className="h-24 flex-col gap-2" onClick={() => window.open(`?mode=wifi&event=${event.id}`, '_blank')}>
+                                    <Icon name="wifi" size={32} /> Display Wi-Fi
+                                </Button>
+                            </div>
+                        </Card>
+                        <Card>
+                            <h3 className="text-lg font-bold mb-2">Upload de Imagens</h3>
+                            <p className="text-xs text-muted mb-4">Arraste imagens aqui para substituir os QR Codes padrão.</p>
+                            <div className="border-2 border-dashed border-gray-600 rounded-lg h-32 flex flex-col items-center justify-center text-gray-500 hover:border-primary hover:text-primary cursor-pointer transition-colors">
+                                <Icon name="image" />
+                                <span className="text-xs mt-2">QR Code Wi-Fi Personalizado</span>
+                            </div>
+                        </Card>
                     </div>
                 </div>
             );
-        };
 
-        const EventManager = ({ event, guests, onBack, onCheckIn, onPrint, onAddGuest, onImport, onExport, onUpdateEvent }) => {
-            const [tab, setTab] = useState('list');
-            const [showModal, setShowModal] = useState(false);
-            const [search, setSearch] = useState('');
-            const [wifi, setWifi] = useState(event.wifi || '');
-            const [photo, setPhoto] = useState(event.photoUrl || '');
-            const fileRef = useRef();
-            const filtered = guests.filter(g => g.name.toLowerCase().includes(search.toLowerCase()));
-            const openTotem = () => { window.open(`?mode=totem&event=${event.id}`, '_blank'); };
+            const renderHistory = () => {
+                const logs = DB.getLogs().slice(0, 50); // Últimos 50
+                return (
+                    <Card className="overflow-hidden p-0">
+                        <table className="w-full text-left text-sm text-gray-400">
+                            <thead className="bg-[#111] text-white uppercase text-xs font-bold">
+                                <tr>
+                                    <th className="p-4">Data</th>
+                                    <th className="p-4">Usuário</th>
+                                    <th className="p-4">Ação</th>
+                                    <th className="p-4">Detalhes</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border">
+                                {logs.map(log => (
+                                    <tr key={log.id} className="hover:bg-white/5">
+                                        <td className="p-4">{log.time}</td>
+                                        <td className="p-4 text-white">{log.user}</td>
+                                        <td className="p-4 text-primary">{log.action}</td>
+                                        <td className="p-4">{log.details}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </Card>
+                );
+            };
 
             return (
                 <div>
-                    <div className="flex between center" style={{marginBottom:20}}>
-                        <div className="flex center"><button className="btn btn-outline" onClick={onBack}>←</button><h3>{event.name}</h3></div>
+                    <div className="flex items-center gap-4 mb-6">
+                        <Button variant="ghost" onClick={onBack} icon="arrow-left">Voltar</Button>
+                        <h1 className="text-2xl font-bold">{event.name}</h1>
                     </div>
-                    <div className="tabs">
-                        <div className={`tab ${tab === 'list' ? 'active' : ''}`} onClick={() => setTab('list')}>👥 Lista</div>
-                        <div className={`tab ${tab === 'config' ? 'active' : ''}`} onClick={() => setTab('config')}>⚙️ Configurações</div>
+
+                    <div className="flex gap-6 border-b border-border mb-8">
+                        {[
+                            {id: 'list', label: 'Lista de Convidados', icon: 'users'},
+                            {id: 'config', label: 'Configurações', icon: 'settings'},
+                            {id: 'history', label: 'Histórico', icon: 'clock'}
+                        ].map(tab => (
+                            <button 
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`flex items-center gap-2 pb-4 text-sm font-medium transition-colors border-b-2 ${activeTab === tab.id ? 'border-primary text-primary' : 'border-transparent text-muted hover:text-white'}`}
+                            >
+                                <Icon name={tab.icon} size={16} /> {tab.label}
+                            </button>
+                        ))}
                     </div>
-                    {tab === 'list' && (
-                        <div className="card">
-                            <div className="flex between" style={{marginBottom:20, flexWrap:'wrap'}}>
-                                <input placeholder="Buscar..." value={search} onChange={e=>setSearch(e.target.value)} style={{marginBottom:0, maxWidth:300}} />
-                                <div className="flex">
-                                    <button className="btn btn-primary" onClick={() => setShowModal(true)}>+ Manual</button>
-                                    <button className="btn btn-outline" onClick={() => fileRef.current.click()}>Importar CSV</button>
-                                    <input type="file" hidden ref={fileRef} onChange={(e) => onImport(e.target.files[0])} accept=".csv,.xlsx" />
-                                    <button className="btn btn-outline" onClick={onExport}>Baixar Relatório</button>
-                                </div>
-                            </div>
-                            {filtered.map(g => (
-                                <div key={g.id} style={{display:'flex', justifyContent:'space-between', padding:'10px 0', borderBottom:'1px solid #333'}}>
-                                    <div><div style={{fontWeight:'bold'}}>{g.name}</div><div style={{color:'#888', fontSize:12}}>{g.company}</div></div>
-                                    <div className="flex center">
-                                        {g.checkedIn && <span style={{color:'#4caf50', fontSize:12, marginRight:10}}>CHEGOU {g.time}</span>}
-                                        <button className="btn" style={{background: g.checkedIn ? 'var(--primary)' : '#444'}} onClick={() => onCheckIn(g.id)}>{g.checkedIn ? '✓' : 'Check-in'}</button>
-                                        <button className="btn btn-outline" style={{padding:8}} onClick={() => onPrint(g)}>🖨️</button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                    {tab === 'config' && (
-                        <div className="card">
-                            <h4 style={{color:'var(--primary)', marginBottom:20}}>Dados para o Convidado</h4>
-                            <label>Wi-Fi String</label><input value={wifi} onChange={e=>setWifi(e.target.value)} />
-                            <label>Link Fotos</label><input value={photo} onChange={e=>setPhoto(e.target.value)} />
-                            <div className="flex">
-                                <button className="btn btn-primary" onClick={() => onUpdateEvent({...event, wifi, photoUrl: photo})}>Salvar Config</button>
-                                <button className="btn btn-outline" onClick={openTotem}>📺 Abrir Totem</button>
-                            </div>
-                        </div>
-                    )}
-                    {showModal && <AddGuestModal onClose={() => setShowModal(false)} onSave={onAddGuest} />}
+
+                    {activeTab === 'list' && renderList()}
+                    {activeTab === 'config' && renderConfig()}
+                    {activeTab === 'history' && renderHistory()}
                 </div>
             );
         };
 
-        const AddGuestModal = ({ onClose, onSave }) => {
-            const [name, setName] = useState('');
-            const [company, setCompany] = useState('');
+        // --- TELAS PÚBLICAS ---
+
+        const PublicTotem = ({ event }) => {
+            const url = `${window.location.origin}${window.location.pathname}?mode=guest&event=${event.id}`;
             return (
-                <div className="modal-overlay">
-                    <div className="modal-content">
-                        <h3>Novo Convidado</h3>
-                        <label>Nome</label><input value={name} onChange={e=>setName(e.target.value)} autoFocus />
-                        <label>Empresa</label><input value={company} onChange={e=>setCompany(e.target.value)} />
-                        <div className="flex" style={{marginTop:10}}>
-                            <button className="btn btn-outline" style={{flex:1}} onClick={onClose}>Cancelar</button>
-                            <button className="btn btn-primary" style={{flex:1}} onClick={() => { onSave({name, company}); onClose(); }}>Salvar</button>
+                <div className="h-screen bg-black flex flex-col items-center justify-center p-8 text-center">
+                    <div className="mb-8 animate-bounce"><Icon name="arrow-down" size={40} className="text-primary" /></div>
+                    <div className="bg-white p-6 rounded-2xl shadow-[0_0_100px_rgba(243,112,33,0.3)]">
+                        <QRCodeCanvas text={url} />
+                    </div>
+                    <h1 className="text-4xl font-bold mt-12 text-white">CHECK-IN</h1>
+                    <p className="text-xl text-gray-400 mt-2">{event.name}</p>
+                    <p className="text-sm text-gray-600 mt-8">Aponte a câmera do seu celular</p>
+                </div>
+            );
+        };
+
+        const PublicWifi = ({ event }) => (
+            <div className="h-screen bg-black flex flex-col items-center justify-center p-8 text-center border-[20px] border-[#111]">
+                <h1 className="text-6xl font-black text-white mb-12 tracking-widest">WI-FI</h1>
+                <div className="flex gap-16 items-center">
+                    <div className="bg-white p-4 rounded-xl">
+                        <QRCodeCanvas text={event.wifi || 'wifi'} />
+                    </div>
+                    <div className="text-left space-y-8">
+                        <div>
+                            <p className="text-gray-500 uppercase tracking-widest text-sm mb-2">REDE / NETWORK</p>
+                            <p className="text-5xl font-bold text-white">{event.wifiSSID || '---'}</p>
+                        </div>
+                        <div>
+                            <p className="text-gray-500 uppercase tracking-widest text-sm mb-2">SENHA / PASSWORD</p>
+                            <p className="text-5xl font-bold text-primary">{event.wifiPass || '---'}</p>
                         </div>
                     </div>
                 </div>
-            );
-        };
+            </div>
+        );
 
-        const TotemScreen = ({ event }) => {
-            const guestUrl = `${window.location.origin}${window.location.pathname}?mode=guest&event=${event.id}`;
-            return (
-                <div className="totem-screen">
-                    <h1 style={{fontSize:40, color:'white'}}>CHECK-IN</h1>
-                    <h2 style={{color:'var(--primary)'}}>{event.name}</h2>
-                    <div className="qr-frame"><QRCodeDisplay text={guestUrl} size={300} /></div>
-                    <p style={{color:'#888'}}>Aponte a câmera para confirmar presença</p>
-                </div>
-            );
-        };
-
-        const GuestScreen = ({ event }) => {
+        const PublicGuestMobile = ({ event }) => {
             const [step, setStep] = useState(1);
             const [name, setName] = useState('');
+
+            const handleConfirm = () => {
+                if(!name) return;
+                // Auto-Checkin Logic
+                const all = DB.getGuests();
+                const exists = all.find(g => g.eventId === event.id && g.name.toLowerCase() === name.toLowerCase());
+                
+                if(exists) {
+                    // Update existing
+                    const updated = all.map(g => g.id === exists.id ? {...g, checkedIn: true, time: 'Auto'} : g);
+                    DB.saveGuests(updated);
+                } else {
+                    // Create Walk-in
+                    const newG = { id: Date.now(), eventId: event.id, name, company: 'Walk-in', checkedIn: true, time: 'Auto' };
+                    DB.saveGuests([...all, newG]);
+                }
+                DB.addLog('auto_checkin', `Guest: ${name}`);
+                setStep(2);
+            };
+
             if(step === 1) return (
-                <div className="guest-screen">
-                    <h2 style={{color:'var(--primary)', textAlign:'center'}}>CHECK-IN</h2>
-                    <p style={{textAlign:'center', marginBottom:30}}>{event.name}</p>
-                    <label>Seu Nome Completo</label><input value={name} onChange={e=>setName(e.target.value)} />
-                    <button className="btn btn-primary" style={{width:'100%', marginTop:20}} onClick={() => { if(name) setStep(2); }}>CONFIRMAR</button>
+                <div className="h-screen bg-black p-6 flex flex-col justify-center max-w-md mx-auto">
+                    <div className="text-center mb-12">
+                        <div className="w-16 h-16 bg-primary rounded-xl mx-auto flex items-center justify-center mb-6">
+                            <Icon name="check" size={32} className="text-white" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-white">Bem-vindo!</h2>
+                        <p className="text-gray-400 mt-2">{event.name}</p>
+                    </div>
+                    <Input label="Seu Nome Completo" value={name} onChange={e=>setName(e.target.value)} autoFocus />
+                    <Button onClick={handleConfirm} className="w-full py-4 text-lg mt-4 shadow-xl shadow-primary/20">CONFIRMAR PRESENÇA</Button>
                 </div>
             );
+
             return (
-                <div className="guest-screen" style={{textAlign:'center'}}>
-                    <h1>Bem-vindos ao<br/>Rooftop Floripa Square</h1>
-                    <p style={{color:'#888', marginBottom:30}}>Obrigado, {name}!</p>
-                    <div style={{background:'#222', padding:15, borderRadius:12}}>
-                        <h4 style={{marginBottom:20}}>Conecte-se e Aproveite</h4>
-                        <div className="success-grid">
-                            <div className="qr-box"><QRCodeDisplay text={event.wifi || 'no-wifi'} size={120} /><small style={{display:'block', marginTop:10, color:'#aaa'}}>Wi-Fi</small></div>
-                            <div className="qr-box"><QRCodeDisplay text={event.photoUrl || 'no-url'} size={120} /><small style={{display:'block', marginTop:10, color:'#aaa'}}>Fotos</small></div>
+                <div className="h-screen bg-black p-6 flex flex-col justify-center max-w-md mx-auto text-center">
+                    <h1 className="text-3xl font-bold text-white mb-2">Olá, {name.split(' ')[0]}!</h1>
+                    <p className="text-gray-400 mb-10">Você está confirmado no evento.</p>
+
+                    <div className="space-y-4">
+                        <a href={event.photoUrl} target="_blank" className="block w-full bg-white text-black font-bold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors">
+                            <Icon name="camera" /> ACESSAR FOTOS
+                        </a>
+                        
+                        <div className="bg-[#1A1A1A] border border-[#333] rounded-xl p-6 mt-8">
+                            <div className="flex items-center justify-center gap-2 text-primary mb-4 font-bold">
+                                <Icon name="wifi" /> CONEXÃO
+                            </div>
+                            <div className="bg-black rounded p-3 mb-2 font-mono text-lg">{event.wifiPass}</div>
+                            <p className="text-xs text-gray-500">Senha do Wi-Fi</p>
                         </div>
                     </div>
                 </div>
             );
         };
 
-        ReactDOM.render(<App />, document.getElementById('root'));
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
 </html>
