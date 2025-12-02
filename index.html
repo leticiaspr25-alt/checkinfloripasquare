@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Floripa Square Check-in ULTIMATE (V6.0)</title>
+    <title>Floripa Square Check-in SaaS (V7.0 - Full Features)</title>
     
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -21,52 +21,60 @@
                     colors: {
                         background: '#000000',
                         surface: '#1A1A1A',
+                        'surface-hover': '#252525',
                         border: '#333333',
                         primary: '#f37021',
                         'primary-hover': '#d95d10',
-                        muted: '#A3A3A3'
+                        muted: '#A3A3A3',
+                        success: '#10B981'
                     },
-                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    boxShadow: {
+                        'glow': '0 0 20px rgba(243, 112, 33, 0.15)',
+                        'card': '0 4px 6px -1px rgba(0, 0, 0, 0.5)'
+                    }
                 }
             }
         }
     </script>
 
     <style>
-        /* --- ESTILOS GERAIS --- */
-        body { background-color: #000000; color: white; font-family: 'Inter', sans-serif; }
+        /* CSS GLOBAL */
+        body { background-color: #000000; color: white; font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
         
-        /* Scrollbar personalizada para Dark Mode */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #111; }
+        /* Scrollbar Premium */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0a0a0a; }
         ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #555; }
 
-        /* Animações */
+        /* Animações Suaves */
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        .animate-enter { animation: fadeIn 0.4s ease-out forwards; }
 
-        /* --- IMPRESSÃO BEMATECH (90x35mm - FRENTE E VERSO BLINDADO) --- */
+        /* ================================================================================== */
+        /* 2. CSS DE IMPRESSÃO (BEMATECH L42 - 90x35mm - DUPLA FACE)                          */
+        /* ================================================================================== */
         @media print {
-            /* 1. Limpa a tela */
+            /* Ocultar interface do sistema */
             body * { visibility: hidden; }
             #root, .app-container { display: none !important; }
             
-            /* 2. Configura a área de impressão */
+            /* Mostrar apenas área de impressão */
             #printable-area, #printable-area * { visibility: visible !important; }
             #printable-area {
-                position: absolute; top: 0; left: 0; width: 100%;
+                position: fixed; top: 0; left: 0; width: 100%;
                 display: block !important;
             }
 
-            /* 3. Configura a página física */
+            /* Configuração da Página Física */
             html, body { margin: 0; padding: 0; background: white; height: auto; overflow: hidden; }
             
-            /* 4. Estilo da Etiqueta Individual */
+            /* Estilo da Etiqueta Individual */
             .print-page {
                 width: 90mm;
                 height: 35mm;
-                page-break-after: always; /* OBRIGATÓRIO para separar frente/verso */
+                page-break-after: always; /* Força quebra para a próxima etiqueta */
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
@@ -78,19 +86,19 @@
                 border: none;
             }
             
-            /* Remove quebra após a última para não soltar papel em branco */
+            /* Evita página em branco no final */
             .print-page:last-child { page-break-after: auto; }
 
-            /* 5. Tipografia Otimizada para Nomes Longos */
+            /* Tipografia "Anti-Quebra" para nomes longos */
             .print-name {
                 font-family: 'Arial Narrow', 'Helvetica Condensed', sans-serif;
                 font-weight: 900;
-                font-size: 18pt; /* Grande */
-                line-height: 1;
+                font-size: 18pt;
+                line-height: 1.1;
                 margin-bottom: 2mm;
                 width: 88mm; /* Margem de segurança */
-                white-space: nowrap; /* Não quebra linha */
-                overflow: hidden; /* Corta se passar muito */
+                white-space: nowrap; /* Tenta não quebrar */
+                overflow: hidden; /* Corta se passar do limite */
             }
             
             .print-info {
@@ -101,10 +109,11 @@
                 overflow: hidden;
             }
 
-            /* 6. Definição Final de Página */
+            /* Definição de Papel para o Driver */
             @page { size: 90mm 35mm; margin: 0; }
         }
         
+        /* Esconde área de impressão na tela normal */
         #printable-area { display: none; }
     </style>
 </head>
@@ -113,25 +122,27 @@
 
     <div id="printable-area">
         <div class="print-page">
-            <div class="print-name" id="p-name-1">NOME</div>
+            <div class="print-name" id="p-name-1">NOME DO CONVIDADO</div>
             <div class="print-info" id="p-company-1">EMPRESA</div>
         </div>
         <div class="print-page">
-            <div class="print-name" id="p-name-2">NOME</div>
+            <div class="print-name" id="p-name-2">NOME DO CONVIDADO</div>
             <div class="print-info" id="p-company-2">EMPRESA</div>
         </div>
     </div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        const { useState, useEffect, useRef, useMemo } = React;
         
-        // --- BANCO DE DADOS LOCAL (SIMULAÇÃO SUPABASE) ---
+        // ==================================================================================
+        // 3. BANCO DE DADOS LOCAL (SIMULAÇÃO COMPLETA)
+        // ==================================================================================
         const DB = {
             KEYS: { USER: 'fs_user', EVENTS: 'fs_events', GUESTS: 'fs_guests', LOGS: 'fs_logs' },
             
-            // Auth
+            // Autenticação
             login: (email, pass) => {
-                // Simulação simples: aceita qualquer senha '123456'
+                // Simulação: Aceita qualquer senha '123456'
                 if(pass === '123456') {
                     const user = { email, role: email.includes('admin') ? 'admin' : 'staff', id: Date.now() };
                     localStorage.setItem(DB.KEYS.USER, JSON.stringify(user));
@@ -140,27 +151,27 @@
                 return null;
             },
             signup: (email, pass) => {
-                // Em produção, salvaria no banco. Aqui só simula sucesso.
+                // Simulação de cadastro bem sucedido
                 return true;
             },
             logout: () => localStorage.removeItem(DB.KEYS.USER),
             getUser: () => JSON.parse(localStorage.getItem(DB.KEYS.USER)),
 
-            // Events
+            // Eventos
             getEvents: () => JSON.parse(localStorage.getItem(DB.KEYS.EVENTS) || '[]'),
             saveEvents: (data) => { 
                 localStorage.setItem(DB.KEYS.EVENTS, JSON.stringify(data)); 
                 window.dispatchEvent(new Event('db_update')); 
             },
             
-            // Guests
+            // Convidados
             getGuests: () => JSON.parse(localStorage.getItem(DB.KEYS.GUESTS) || '[]'),
             saveGuests: (data) => { 
                 localStorage.setItem(DB.KEYS.GUESTS, JSON.stringify(data)); 
                 window.dispatchEvent(new Event('db_update')); 
             },
 
-            // Logs (Histórico)
+            // Logs de Auditoria (Histórico)
             getLogs: () => JSON.parse(localStorage.getItem(DB.KEYS.LOGS) || '[]'),
             addLog: (action, details) => {
                 const user = DB.getUser();
@@ -172,46 +183,59 @@
                     details, 
                     time: new Date().toLocaleString('pt-BR') 
                 };
-                localStorage.setItem(DB.KEYS.LOGS, JSON.stringify([newLog, ...logs]));
+                // Mantém apenas os últimos 100 logs
+                const updatedLogs = [newLog, ...logs].slice(0, 100);
+                localStorage.setItem(DB.KEYS.LOGS, JSON.stringify(updatedLogs));
             }
         };
 
-        // --- COMPONENTES UI (DESIGN SYSTEM) ---
+        // ==================================================================================
+        // 4. COMPONENTES DE UI (DESIGN SYSTEM PREMIUM)
+        // ==================================================================================
+        
+        // Ícone (Lucide)
         const Icon = ({ name, size=20, className }) => { 
             useEffect(() => lucide.createIcons(), [name]); 
             return <i data-lucide={name} width={size} height={size} className={className}></i>; 
         };
 
-        const Card = ({ children, className }) => <div className={`bg-surface border border-border rounded-xl p-6 shadow-sm ${className}`}>{children}</div>;
+        // Cartão Padrão
+        const Card = ({ children, className, hover = false }) => (
+            <div className={`bg-surface border border-border rounded-xl p-6 shadow-card ${hover ? 'hover:border-primary/50 transition-colors duration-300' : ''} ${className}`}>
+                {children}
+            </div>
+        );
         
-        const Button = ({ children, onClick, className, variant='primary', icon, ...props }) => {
-            const base = "flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50";
+        // Botão Estilizado
+        const Button = ({ children, onClick, className, variant='primary', icon, title, ...props }) => {
+            const base = "flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 select-none";
             const variants = {
-                primary: "bg-primary text-white hover:bg-primary-hover shadow-lg shadow-orange-900/20",
-                outline: "bg-transparent border border-gray-600 text-gray-300 hover:border-white hover:text-white",
+                primary: "bg-primary text-white hover:bg-primary-hover shadow-lg shadow-orange-900/20 active:scale-95",
+                outline: "bg-transparent border border-gray-600 text-gray-300 hover:border-white hover:text-white hover:bg-white/5",
                 ghost: "text-gray-400 hover:text-white hover:bg-white/5",
                 danger: "bg-red-500/10 text-red-500 border border-red-500/50 hover:bg-red-500/20"
             };
             return (
-                <button onClick={onClick} className={`${base} ${variants[variant]} ${className}`} {...props}>
+                <button onClick={onClick} className={`${base} ${variants[variant]} ${className}`} title={title} {...props}>
                     {icon && <Icon name={icon} size={18} />} {children}
                 </button>
             );
         };
 
+        // Input de Texto
         const Input = ({ label, ...props }) => (
             <div className="mb-4 w-full">
-                {label && <label className="block text-sm text-muted mb-2 font-medium">{label}</label>}
-                <input {...props} className="w-full bg-[#111] border border-border rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors placeholder-gray-600" />
+                {label && <label className="block text-xs font-bold text-muted mb-2 uppercase tracking-wider">{label}</label>}
+                <input {...props} className="w-full bg-[#0a0a0a] border border-border rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder-gray-700" />
             </div>
         );
 
-        // Upload Component com Preview
+        // Componente de Upload com Preview (Drag & Drop)
         const UploadBox = ({ label, icon, onUpload, previewUrl }) => {
             const inputRef = useRef();
             return (
                 <div 
-                    className="border-2 border-dashed border-gray-700 bg-[#0a0a0a] rounded-xl h-40 flex flex-col items-center justify-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-all group relative overflow-hidden"
+                    className="border-2 border-dashed border-gray-700 bg-[#0a0a0a] rounded-xl h-48 flex flex-col items-center justify-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-all group relative overflow-hidden"
                     onClick={() => inputRef.current.click()}
                 >
                     <input type="file" hidden ref={inputRef} onChange={(e) => {
@@ -221,41 +245,51 @@
                     
                     {previewUrl ? (
                         <div className="absolute inset-0 w-full h-full">
-                            <img src={previewUrl} className="w-full h-full object-contain p-2" />
-                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                <span className="bg-primary text-white px-3 py-1 rounded text-xs font-bold">Trocar Imagem</span>
+                            <img src={previewUrl} className="w-full h-full object-contain p-4" />
+                            <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity backdrop-blur-sm">
+                                <span className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold shadow-xl transform translate-y-2 group-hover:translate-y-0 transition-transform">Trocar Imagem</span>
                             </div>
                         </div>
                     ) : (
-                        <div className="flex flex-col items-center gap-2 text-gray-500 group-hover:text-primary transition-colors">
-                            <div className="p-3 bg-gray-800 rounded-full group-hover:bg-primary/20"><Icon name={icon} size={24} /></div>
-                            <span className="text-xs font-bold uppercase tracking-widest">{label}</span>
+                        <div className="flex flex-col items-center gap-3 text-gray-500 group-hover:text-primary transition-colors">
+                            <div className="p-4 bg-gray-800 rounded-full group-hover:bg-primary/20 transition-colors"><Icon name={icon} size={28} /></div>
+                            <div className="text-center">
+                                <span className="block text-sm font-bold uppercase tracking-widest">{label}</span>
+                                <span className="text-xs opacity-60">Clique ou arraste o arquivo</span>
+                            </div>
                         </div>
                     )}
                 </div>
             );
         };
 
+        // Gerador de QR Code
         const QRCodeCanvas = ({ text }) => {
             const canvasRef = useRef();
-            useEffect(() => { if(canvasRef.current && text) QRCode.toCanvas(canvasRef.current, text, { width: 250, margin: 1, color: { dark: '#000', light: '#fff' } }); }, [text]);
+            useEffect(() => { 
+                if(canvasRef.current && text) {
+                    QRCode.toCanvas(canvasRef.current, text, { width: 250, margin: 1, color: { dark: '#000', light: '#fff' } }); 
+                }
+            }, [text]);
             return <canvas ref={canvasRef} className="rounded-xl shadow-2xl border-4 border-white" />;
         };
 
-        // --- APLICAÇÃO PRINCIPAL ---
+        // ==================================================================================
+        // 5. APLICAÇÃO PRINCIPAL (APP SHELL)
+        // ==================================================================================
         const App = () => {
             const [user, setUser] = useState(DB.getUser());
             const [view, setView] = useState('loading');
             const [events, setEvents] = useState([]);
             const [currentEvent, setCurrentEvent] = useState(null);
 
-            // Carregamento Inicial e Rotas
+            // Carregamento Inicial e Roteamento
             useEffect(() => {
                 const sync = () => setEvents(DB.getEvents());
                 sync();
                 window.addEventListener('db_update', sync);
 
-                // Lógica de Roteamento (Totem, Guest, etc)
+                // Lógica de Roteamento via URL (Simulando rotas reais)
                 const params = new URLSearchParams(window.location.search);
                 const evtId = parseInt(params.get('event'));
                 const mode = params.get('mode');
@@ -265,6 +299,7 @@
                     const evt = allEvents.find(e => e.id === evtId);
                     if (evt) {
                         setCurrentEvent(evt);
+                        // Rotas Públicas (Não precisam de login)
                         if (['totem', 'wifi', 'guest'].includes(mode)) {
                             setView(mode);
                         } else if (user) {
@@ -285,37 +320,44 @@
                 return () => window.removeEventListener('db_update', sync);
             }, [user]);
 
-            // Funções de Navegação
+            // Handlers de Auth
             const handleLogin = (u) => { setUser(u); setView('dashboard'); };
             const handleLogout = () => { DB.logout(); setUser(null); setView('login'); };
 
             // Renderização Condicional
-            if (view === 'loading') return <div className="h-screen bg-black flex items-center justify-center text-primary">Carregando...</div>;
+            if (view === 'loading') return <div className="h-screen bg-black flex items-center justify-center text-primary animate-pulse">Carregando Sistema...</div>;
             
             // Telas Públicas (Sem Shell de Admin)
             if (view === 'totem') return <PublicTotem event={currentEvent} />;
             if (view === 'wifi') return <PublicWifi event={currentEvent} />;
             if (view === 'guest') return <PublicGuest event={currentEvent} />;
 
-            // Telas Admin (Com Header)
+            // Área Logada (Admin Shell)
             return (
-                <div className="min-h-screen bg-black pb-20">
+                <div className="min-h-screen bg-black pb-20 selection:bg-primary selection:text-white">
                     {view !== 'login' && (
-                        <header className="border-b border-border bg-black/80 backdrop-blur sticky top-0 z-50">
-                            <div className="container mx-auto px-6 h-16 flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 bg-primary rounded flex items-center justify-center font-black text-white">F</div>
-                                    <span className="font-bold text-lg tracking-tight text-white">FLORIPA SQUARE</span>
+                        <header className="border-b border-border bg-black/80 backdrop-blur-md sticky top-0 z-50">
+                            <div className="container mx-auto px-6 h-20 flex items-center justify-between">
+                                <div className="flex items-center gap-3 group cursor-default">
+                                    <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center font-black text-white text-xl shadow-glow group-hover:scale-105 transition-transform">F</div>
+                                    <div>
+                                        <span className="block font-bold text-lg tracking-tight text-white leading-none">FLORIPA SQUARE</span>
+                                        <span className="text-[10px] text-primary font-bold tracking-[0.2em] uppercase">Event Manager</span>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-4">
-                                    <span className="text-xs text-muted hidden md:block uppercase tracking-wider">{user?.email}</span>
-                                    <Button variant="outline" onClick={handleLogout} className="h-8 text-xs px-3">Sair</Button>
+                                <div className="flex items-center gap-6">
+                                    <div className="hidden md:block text-right">
+                                        <p className="text-xs text-muted uppercase tracking-wider font-bold">Usuário</p>
+                                        <p className="text-sm font-medium text-white">{user?.email}</p>
+                                    </div>
+                                    <div className="h-8 w-px bg-border hidden md:block"></div>
+                                    <Button variant="ghost" onClick={handleLogout} className="text-xs hover:bg-red-500/10 hover:text-red-500" icon="log-out">Sair</Button>
                                 </div>
                             </div>
                         </header>
                     )}
 
-                    <main className="container mx-auto px-4 py-8">
+                    <main className="container mx-auto px-6 py-10">
                         {view === 'login' && <AuthScreen onLogin={handleLogin} />}
                         
                         {view === 'dashboard' && (
@@ -323,7 +365,7 @@
                                 events={events} 
                                 onCreate={(ev) => {
                                     DB.saveEvents([...events, { ...ev, id: Date.now() }]);
-                                    DB.addLog('create_event', `Criou: ${ev.name}`);
+                                    DB.addLog('create_event', `Criou evento: ${ev.name}`);
                                 }}
                                 onSelect={(ev) => { setCurrentEvent(ev); setView('manager'); }} 
                             />
@@ -333,9 +375,10 @@
                             <EventManager 
                                 event={currentEvent} 
                                 onBack={() => setView('dashboard')}
-                                onUpdate={(upd) => {
+                                onUpdateEvent={(upd) => {
                                     DB.saveEvents(events.map(e => e.id === upd.id ? upd : e));
                                     setCurrentEvent(upd);
+                                    DB.addLog('update_event', `Editou evento: ${upd.name}`);
                                 }}
                             />
                         )}
@@ -344,7 +387,9 @@
             );
         };
 
-        // --- TELA DE LOGIN / CADASTRO ---
+        // ==================================================================================
+        // 6. TELA DE LOGIN & CADASTRO
+        // ==================================================================================
         const AuthScreen = ({ onLogin }) => {
             const [isSignup, setIsSignup] = useState(false);
             const [email, setEmail] = useState('');
@@ -359,78 +404,99 @@
                     }
                 } else {
                     const u = DB.login(email, pass);
-                    if(u) onLogin(u); else alert('Senha incorreta. Use 123456');
+                    if(u) onLogin(u); else alert('Senha incorreta. Para teste use: 123456');
                 }
             };
 
             return (
-                <div className="h-[calc(100vh-4rem)] flex items-center justify-center">
-                    <Card className="w-full max-w-md bg-[#111] border-none shadow-2xl">
-                        <div className="text-center mb-8">
+                <div className="h-[calc(100vh-8rem)] flex items-center justify-center animate-enter">
+                    <Card className="w-full max-w-md bg-[#111] border-border shadow-2xl relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-primary"></div>
+                        <div className="text-center mb-8 pt-4">
                             <h1 className="text-3xl font-bold text-white mb-2">Bem-vindo</h1>
-                            <p className="text-primary text-xs font-bold tracking-[0.2em] uppercase">Gestão de Eventos</p>
+                            <p className="text-muted text-sm">Acesse o sistema para gerenciar</p>
                         </div>
-                        <div className="flex gap-4 mb-8 border-b border-gray-800">
-                            <button onClick={() => setIsSignup(false)} className={`pb-3 flex-1 text-sm font-medium transition-colors ${!isSignup ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}>Entrar</button>
-                            <button onClick={() => setIsSignup(true)} className={`pb-3 flex-1 text-sm font-medium transition-colors ${isSignup ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}>Criar Conta</button>
+                        
+                        <div className="flex gap-4 mb-8 border-b border-border">
+                            <button onClick={() => setIsSignup(false)} className={`pb-3 flex-1 text-sm font-bold transition-colors border-b-2 ${!isSignup ? 'border-primary text-primary' : 'border-transparent text-muted hover:text-white'}`}>ENTRAR</button>
+                            <button onClick={() => setIsSignup(true)} className={`pb-3 flex-1 text-sm font-bold transition-colors border-b-2 ${isSignup ? 'border-primary text-primary' : 'border-transparent text-muted hover:text-white'}`}>CRIAR CONTA</button>
                         </div>
-                        <form onSubmit={handleSubmit}>
-                            <Input label="Email Corporativo" value={email} onChange={e=>setEmail(e.target.value)} required />
-                            <Input label="Senha" type="password" value={pass} onChange={e=>setPass(e.target.value)} required />
-                            {isSignup && <Input label="Confirmar Senha" type="password" required />}
-                            <Button className="w-full mt-6 py-3 text-lg">{isSignup ? 'CADASTRAR' : 'ACESSAR'}</Button>
+
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <Input label="Email Corporativo" value={email} onChange={e=>setEmail(e.target.value)} required placeholder="nome@empresa.com" />
+                            <Input label="Senha" type="password" value={pass} onChange={e=>setPass(e.target.value)} required placeholder="••••••" />
+                            {isSignup && <Input label="Confirmar Senha" type="password" required placeholder="••••••" />}
+                            
+                            <Button className="w-full mt-6 py-3.5 text-lg shadow-glow">{isSignup ? 'CADASTRAR EQUIPE' : 'ACESSAR PAINEL'}</Button>
                         </form>
-                        {!isSignup && <p className="text-center text-xs text-gray-600 mt-6">Senha de demonstração: 123456</p>}
+                        
+                        {!isSignup && (
+                            <div className="mt-6 text-center">
+                                <p className="text-xs text-muted">Acesso demo para teste</p>
+                                <code className="bg-black px-2 py-1 rounded text-xs text-primary mt-1 inline-block">Senha: 123456</code>
+                            </div>
+                        )}
                     </Card>
                 </div>
             );
         };
 
-        // --- DASHBOARD DE EVENTOS ---
+        // ==================================================================================
+        // 7. DASHBOARD DE EVENTOS
+        // ==================================================================================
         const Dashboard = ({ events, onCreate, onSelect }) => {
             const [showModal, setShowModal] = useState(false);
             const [newEvt, setNewEvt] = useState({ name: '', date: '' });
 
             return (
-                <div className="animate-fade-in">
-                    <div className="flex justify-between items-end mb-10">
+                <div className="animate-enter">
+                    <div className="flex justify-between items-end mb-10 border-b border-border pb-6">
                         <div>
-                            <h2 className="text-3xl font-bold text-white">Eventos</h2>
-                            <p className="text-muted text-sm mt-1">Gerencie seus check-ins e acessos</p>
+                            <h2 className="text-4xl font-bold text-white mb-2">Meus Eventos</h2>
+                            <p className="text-muted">Selecione um evento para gerenciar</p>
                         </div>
-                        <Button icon="plus" onClick={() => setShowModal(true)}>Novo Evento</Button>
+                        <Button icon="plus" onClick={() => setShowModal(true)} className="px-6 py-3">Novo Evento</Button>
                     </div>
 
                     {events.length === 0 ? (
-                        <div className="text-center py-20 bg-surface rounded-xl border border-dashed border-gray-700">
-                            <Icon name="calendar-x" size={48} className="text-gray-600 mx-auto mb-4" />
-                            <p className="text-gray-400">Nenhum evento criado ainda.</p>
+                        <div className="text-center py-24 bg-surface/50 rounded-2xl border-2 border-dashed border-border flex flex-col items-center">
+                            <div className="w-20 h-20 bg-surface rounded-full flex items-center justify-center mb-6"><Icon name="calendar-x" size={40} className="text-muted" /></div>
+                            <h3 className="text-xl font-bold text-white mb-2">Nenhum evento encontrado</h3>
+                            <p className="text-muted mb-8 max-w-md">Comece criando seu primeiro evento para gerenciar listas e check-ins.</p>
+                            <Button onClick={() => setShowModal(true)}>Criar Primeiro Evento</Button>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {events.map(ev => (
                                 <div key={ev.id} onClick={() => onSelect(ev)} className="group bg-surface border border-border rounded-xl p-6 cursor-pointer hover:border-primary/50 transition-all hover:shadow-2xl hover:shadow-primary/5 relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity"><Icon name="arrow-right" className="text-primary" /></div>
-                                    <div className="w-12 h-12 bg-white/5 rounded-lg flex items-center justify-center text-primary mb-4 group-hover:bg-primary group-hover:text-white transition-colors">
-                                        <Icon name="calendar" />
+                                    <div className="absolute top-0 right-0 p-5 opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-2 group-hover:translate-x-0 duration-300">
+                                        <Icon name="arrow-right" className="text-primary" />
                                     </div>
-                                    <h3 className="text-xl font-bold text-white mb-1 truncate">{ev.name}</h3>
-                                    <p className="text-sm text-gray-500">{new Date(ev.date).toLocaleDateString('pt-BR')}</p>
+                                    <div className="w-14 h-14 bg-white/5 rounded-xl flex items-center justify-center text-primary mb-5 group-hover:bg-primary group-hover:text-white transition-colors duration-300 shadow-inner">
+                                        <Icon name="calendar" size={24} />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-white mb-2 truncate pr-8">{ev.name}</h3>
+                                    <div className="flex items-center gap-2 text-sm text-gray-500 group-hover:text-gray-400">
+                                        <Icon name="clock" size={14} />
+                                        {new Date(ev.date).toLocaleDateString('pt-BR')}
+                                    </div>
                                 </div>
                             ))}
                         </div>
                     )}
 
-                    {/* Modal Criar Evento */}
                     {showModal && (
-                        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-                            <Card className="w-full max-w-md bg-[#1A1A1A]">
-                                <h3 className="text-xl font-bold mb-6">Novo Evento</h3>
-                                <Input label="Nome do Evento" value={newEvt.name} onChange={e=>setNewEvt({...newEvt, name:e.target.value})} autoFocus />
+                        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-enter">
+                            <Card className="w-full max-w-md bg-[#111] border-border">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="text-xl font-bold">Novo Evento</h3>
+                                    <button onClick={() => setShowModal(false)} className="text-muted hover:text-white"><Icon name="x" /></button>
+                                </div>
+                                <Input label="Nome do Evento" value={newEvt.name} onChange={e=>setNewEvt({...newEvt, name:e.target.value})} autoFocus placeholder="Ex: Tech Summit 2025" />
                                 <Input label="Data" type="date" value={newEvt.date} onChange={e=>setNewEvt({...newEvt, date:e.target.value})} />
                                 <div className="flex gap-3 mt-8">
-                                    <Button variant="ghost" className="flex-1" onClick={() => setShowModal(false)}>Cancelar</Button>
-                                    <Button className="flex-1" onClick={() => { onCreate(newEvt); setShowModal(false); }}>Criar</Button>
+                                    <Button variant="outline" className="flex-1" onClick={() => setShowModal(false)}>Cancelar</Button>
+                                    <Button className="flex-1" onClick={() => { if(newEvt.name) { onCreate(newEvt); setShowModal(false); setNewEvt({name:'', date:''}); } }}>Criar Evento</Button>
                                 </div>
                             </Card>
                         </div>
@@ -439,31 +505,37 @@
             );
         };
 
-        // --- GESTÃO DO EVENTO (O CORAÇÃO DO SISTEMA) ---
-        const EventManager = ({ event, onBack, onUpdate }) => {
+        // ==================================================================================
+        // 8. GESTÃO DO EVENTO (O CORAÇÃO DO SISTEMA)
+        // ==================================================================================
+        const EventManager = ({ event, onBack, onUpdateEvent }) => {
             const [tab, setTab] = useState('list');
             const [guests, setGuests] = useState([]);
             const [filter, setFilter] = useState('');
             const fileRef = useRef();
 
             // Sincronia de Guests
+            const refreshGuests = () => {
+                const all = DB.getGuests();
+                setGuests(all.filter(g => g.eventId === event.id));
+            };
+
             useEffect(() => {
-                const update = () => {
-                    const all = DB.getGuests();
-                    setGuests(all.filter(g => g.eventId === event.id));
-                };
-                update();
-                window.addEventListener('db_update', update);
-                return () => window.removeEventListener('db_update', update);
+                refreshGuests();
+                window.addEventListener('db_update', refreshGuests);
+                return () => window.removeEventListener('db_update', refreshGuests);
             }, [event.id]);
 
-            // Funções de Lista
+            // --- AÇÕES DA LISTA ---
             const handleDownloadTemplate = () => {
-                const data = [{Nome: 'Exemplo Silva', Empresa: 'Empresa X', Cargo: 'Gerente', Email: 'exemplo@email.com'}];
+                const data = [
+                    {Nome: 'João Silva', Empresa: 'Google', Cargo: 'Diretor', Email: 'joao@google.com'},
+                    {Nome: 'Maria Souza', Empresa: 'Amazon', Cargo: 'Gerente', Email: 'maria@amazon.com'}
+                ];
                 const ws = XLSX.utils.json_to_sheet(data);
                 const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Modelo");
-                XLSX.writeFile(wb, "Modelo_Importacao.xlsx");
+                XLSX.utils.book_append_sheet(wb, ws, "Modelo_Importacao");
+                XLSX.writeFile(wb, "Modelo_Lista_Convidados.xlsx");
             };
 
             const handleImport = (file) => {
@@ -471,19 +543,24 @@
                 reader.onload = (e) => {
                     const wb = XLSX.read(e.target.result, {type:'array'});
                     const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-                    const newGuests = json.map((r, i) => ({
-                        id: Date.now() + i, eventId: event.id,
-                        name: r['Nome'] || 'Sem Nome', company: r['Empresa'] || '', role: r['Cargo'] || '',
+                    const newGuests = json.map((row, idx) => ({
+                        id: Date.now() + idx,
+                        eventId: event.id,
+                        name: row['Nome'] || row['Name'] || 'Sem Nome',
+                        company: row['Empresa'] || row['Company'] || '',
+                        role: row['Cargo'] || '',
+                        email: row['Email'] || '',
                         checkedIn: false
                     }));
                     DB.saveGuests([...DB.getGuests(), ...newGuests]);
-                    DB.addLog('import', `Importou ${newGuests.length} nomes`);
-                    alert(`${newGuests.length} importados!`);
+                    DB.addLog('import_csv', `Importou ${newGuests.length} convidados`);
+                    alert(`${newGuests.length} convidados importados com sucesso!`);
                 };
                 reader.readAsArrayBuffer(file);
             };
 
             const handleExport = () => {
+                if (guests.length === 0) { alert("Lista vazia!"); return; }
                 const data = guests.map(g => ({
                     Nome: g.name, Empresa: g.company, Cargo: g.role, 
                     Status: g.checkedIn ? 'PRESENTE' : 'AUSENTE', Hora: g.time || '-'
@@ -491,7 +568,7 @@
                 const ws = XLSX.utils.json_to_sheet(data);
                 const wb = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(wb, ws, "Relatorio");
-                XLSX.writeFile(wb, `${event.name}_Relatorio.xlsx`);
+                XLSX.writeFile(wb, `${event.name}_Relatorio_Final.xlsx`);
             };
 
             const toggleCheckIn = (guest) => {
@@ -499,180 +576,220 @@
                 const all = DB.getGuests();
                 const updated = all.map(g => g.id === guest.id ? {...g, checkedIn: !g.checkedIn, time: !g.checkedIn ? now : null} : g);
                 DB.saveGuests(updated);
-                if(!guest.checkedIn) DB.addLog('checkin', `Entrou: ${guest.name}`);
+                
+                if(!guest.checkedIn) DB.addLog('checkin_in', `Entrada: ${guest.name}`);
+                else DB.addLog('checkin_out', `Saída (Desfez): ${guest.name}`);
             };
 
             const printLabel = (guest) => {
                 if(!guest.checkedIn) toggleCheckIn(guest);
+                
+                // Preenche os dados ocultos para impressão
                 document.getElementById('p-name-1').innerText = guest.name;
                 document.getElementById('p-company-1').innerText = guest.company;
                 document.getElementById('p-name-2').innerText = guest.name;
                 document.getElementById('p-company-2').innerText = guest.company;
+                
                 setTimeout(() => window.print(), 200);
+                DB.addLog('print_label', `Imprimiu: ${guest.name}`);
             };
 
-            // Logs
-            const historyLogs = DB.getLogs(); // Pega todos (filtro simples poderia ser aplicado)
+            // Logs filtrados
+            const logs = DB.getLogs();
 
-            // Render Tabs
             return (
-                <div className="animate-fade-in">
+                <div className="animate-enter">
                     {/* Header Interno */}
-                    <div className="flex items-center gap-4 mb-8">
-                        <Button variant="ghost" onClick={onBack} icon="arrow-left">Voltar</Button>
-                        <h1 className="text-3xl font-bold text-white">{event.name}</h1>
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 border-b border-border pb-6">
+                        <div className="flex items-center gap-4">
+                            <Button variant="ghost" onClick={onBack} icon="arrow-left" className="h-10 w-10 p-0 rounded-full bg-white/5" />
+                            <div>
+                                <h1 className="text-3xl font-bold text-white">{event.name}</h1>
+                                <div className="flex items-center gap-2 text-sm text-muted mt-1">
+                                    <Icon name="calendar" size={14} /> {new Date(event.date).toLocaleDateString('pt-BR')}
+                                    <span className="mx-2">•</span>
+                                    <Icon name="users" size={14} /> {guests.length} na lista
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex gap-2">
+                            <Button variant="outline" onClick={() => window.open(`?mode=totem&event=${event.id}`, '_blank')} icon="monitor">Abrir Totem</Button>
+                            <Button variant="outline" onClick={() => window.open(`?mode=wifi&event=${event.id}`, '_blank')} icon="wifi">Display TV</Button>
+                        </div>
                     </div>
 
-                    {/* Tabs Navigation */}
-                    <div className="flex gap-8 border-b border-border mb-8">
+                    {/* Navegação Abas */}
+                    <div className="flex gap-8 border-b border-border mb-8 overflow-x-auto">
                         {[
-                            {id: 'list', label: 'Lista de Convidados', icon: 'users'},
+                            {id: 'list', label: 'Lista de Convidados', icon: 'list'},
                             {id: 'config', label: 'Configurações', icon: 'settings'},
-                            {id: 'history', label: 'Histórico', icon: 'clock'}
+                            {id: 'history', label: 'Histórico', icon: 'history'}
                         ].map(t => (
                             <button 
                                 key={t.id} onClick={() => setTab(t.id)}
-                                className={`flex items-center gap-2 pb-4 text-sm font-bold transition-colors border-b-2 ${tab === t.id ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-white'}`}
+                                className={`flex items-center gap-2 pb-4 text-sm font-bold transition-all border-b-2 whitespace-nowrap ${tab === t.id ? 'border-primary text-primary' : 'border-transparent text-muted hover:text-white'}`}
                             >
                                 <Icon name={t.icon} size={18} /> {t.label}
                             </button>
                         ))}
                     </div>
 
-                    {/* TAB: LISTA */}
+                    {/* --- CONTEÚDO DA ABA LISTA --- */}
                     {tab === 'list' && (
-                        <div className="space-y-6">
+                        <div className="space-y-6 animate-enter">
                             {/* Métricas */}
                             <div className="grid grid-cols-2 gap-4">
-                                <Card className="flex flex-col items-center py-8">
-                                    <span className="text-xs font-bold uppercase tracking-widest text-gray-500">Total Convidados</span>
-                                    <span className="text-5xl font-bold text-white mt-2">{guests.length}</span>
+                                <Card className="flex flex-col items-center justify-center py-8 relative overflow-hidden">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent"></div>
+                                    <span className="text-xs font-bold uppercase tracking-widest text-muted z-10">Total na Lista</span>
+                                    <span className="text-6xl font-black text-white mt-2 z-10">{guests.length}</span>
                                 </Card>
-                                <Card className="flex flex-col items-center py-8 bg-primary/5 border-primary/20">
-                                    <span className="text-xs font-bold uppercase tracking-widest text-primary">Presentes</span>
-                                    <span className="text-5xl font-bold text-primary mt-2">{guests.filter(g=>g.checkedIn).length}</span>
+                                <Card className="flex flex-col items-center justify-center py-8 bg-primary/10 border-primary/30 relative overflow-hidden">
+                                    <div className="absolute inset-0 bg-primary/5"></div>
+                                    <span className="text-xs font-bold uppercase tracking-widest text-primary z-10">Presentes</span>
+                                    <span className="text-6xl font-black text-primary mt-2 z-10">{guests.filter(g=>g.checkedIn).length}</span>
                                 </Card>
                             </div>
 
-                            {/* Toolbar */}
-                            <div className="flex flex-col md:flex-row justify-between gap-4 bg-surface p-4 rounded-xl border border-border">
-                                <div className="relative flex-1">
-                                    <Icon name="search" className="absolute left-3 top-3.5 text-gray-500" size={18} />
+                            {/* Barra de Ferramentas */}
+                            <div className="bg-surface p-4 rounded-xl border border-border flex flex-col xl:flex-row gap-4 justify-between items-center shadow-lg">
+                                <div className="relative w-full xl:w-96">
+                                    <Icon name="search" className="absolute left-3 top-3.5 text-muted" size={18} />
                                     <input 
-                                        className="w-full bg-black/50 border border-border rounded-lg pl-10 pr-4 py-2.5 text-white focus:outline-none focus:border-primary"
-                                        placeholder="Buscar convidado..."
+                                        className="w-full bg-black/50 border border-border rounded-lg pl-10 pr-4 py-2.5 text-white focus:outline-none focus:border-primary placeholder-gray-600 transition-colors"
+                                        placeholder="Buscar por nome, empresa..."
                                         value={filter} onChange={e=>setFilter(e.target.value)}
                                     />
                                 </div>
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 w-full xl:w-auto overflow-x-auto pb-2 xl:pb-0">
                                     <input type="file" hidden ref={fileRef} onChange={e => handleImport(e.target.files[0])} />
                                     
-                                    {/* BOTÃO NOVO: MODELO */}
-                                    <Button variant="ghost" icon="file-spreadsheet" onClick={handleDownloadTemplate} title="Baixar Modelo CSV" />
-                                    
-                                    <Button variant="outline" icon="upload" onClick={() => fileRef.current.click()}>Importar</Button>
-                                    <Button variant="outline" icon="download" onClick={handleExport}>Relatório</Button>
+                                    <Button variant="ghost" onClick={handleDownloadTemplate} title="Baixar Modelo de Planilha" icon="file-spreadsheet" className="whitespace-nowrap">Modelo</Button>
+                                    <Button variant="outline" onClick={() => fileRef.current.click()} icon="upload" className="whitespace-nowrap">Importar</Button>
+                                    <Button variant="outline" onClick={handleExport} icon="download" className="whitespace-nowrap">Exportar</Button>
                                     <Button icon="plus" onClick={() => {
-                                        const name = prompt("Nome:");
+                                        const name = prompt("Nome do Convidado:");
                                         if(name) {
                                             const company = prompt("Empresa:");
                                             const newG = { id: Date.now(), eventId: event.id, name, company, checkedIn: true, time: 'Manual' };
                                             DB.saveGuests([...DB.getGuests(), newG]);
                                             DB.addLog('manual_add', `Adicionou: ${name}`);
                                         }
-                                    }}>Manual</Button>
+                                    }} className="whitespace-nowrap">Manual</Button>
                                 </div>
                             </div>
 
-                            {/* Lista Cards */}
+                            {/* Lista de Cards */}
                             <div className="space-y-3">
-                                {guests.filter(g => g.name.toLowerCase().includes(filter.toLowerCase())).map(g => (
-                                    <div key={g.id} className="flex items-center justify-between bg-surface border border-border p-4 rounded-lg hover:border-gray-500 transition-colors group">
-                                        <div>
+                                {guests.filter(g => g.name.toLowerCase().includes(filter.toLowerCase()) || g.company.toLowerCase().includes(filter.toLowerCase())).map(g => (
+                                    <div key={g.id} className="flex items-center justify-between bg-surface border border-border p-5 rounded-xl hover:border-gray-500 transition-all duration-200 group relative overflow-hidden">
+                                        {/* Efeito visual de check-in */}
+                                        {g.checkedIn && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>}
+                                        
+                                        <div className="pl-2">
                                             <div className="flex items-center gap-3">
-                                                <h4 className="font-bold text-lg text-white">{g.name}</h4>
-                                                {g.checkedIn && <span className="bg-primary text-black text-[10px] uppercase font-bold px-2 py-0.5 rounded">Presente</span>}
+                                                <h4 className={`font-bold text-lg ${g.checkedIn ? 'text-white' : 'text-gray-300'}`}>{g.name}</h4>
+                                                {g.checkedIn && <span className="bg-primary text-black text-[10px] uppercase font-bold px-2 py-0.5 rounded shadow-glow">Presente</span>}
                                             </div>
-                                            <p className="text-sm text-gray-400">{g.company} {g.role && `• ${g.role}`}</p>
+                                            <p className="text-sm text-gray-500">{g.company} {g.role && `• ${g.role}`}</p>
                                         </div>
                                         <div className="flex items-center gap-4">
-                                            <button onClick={() => printLabel(g)} className="text-gray-500 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors" title="Imprimir Etiqueta">
+                                            {/* Botão Imprimir */}
+                                            <button 
+                                                onClick={() => printLabel(g)} 
+                                                className="text-gray-500 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors opacity-50 group-hover:opacity-100" 
+                                                title="Imprimir Etiqueta"
+                                            >
                                                 <Icon name="printer" />
                                             </button>
+                                            
+                                            {/* Toggle Switch */}
                                             <button 
                                                 onClick={() => toggleCheckIn(g)}
-                                                className={`w-14 h-8 rounded-full p-1 transition-colors duration-200 ease-in-out ${g.checkedIn ? 'bg-primary' : 'bg-gray-800'}`}
+                                                className={`w-14 h-8 rounded-full p-1 transition-colors duration-300 ease-in-out ${g.checkedIn ? 'bg-primary' : 'bg-gray-800'}`}
                                             >
-                                                <div className={`w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-200 ${g.checkedIn ? 'translate-x-6' : 'translate-x-0'}`} />
+                                                <div className={`w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-300 ${g.checkedIn ? 'translate-x-6' : 'translate-x-0'}`} />
                                             </button>
                                         </div>
                                     </div>
                                 ))}
-                                {guests.length === 0 && <div className="text-center py-10 text-gray-500">Nenhum convidado na lista. Importe ou adicione manualmente.</div>}
+                                {guests.length === 0 && (
+                                    <div className="text-center py-16 text-muted border-2 border-dashed border-border rounded-xl">
+                                        <Icon name="users" size={48} className="mx-auto mb-4 opacity-50" />
+                                        <p>A lista está vazia. Comece importando uma planilha.</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
 
-                    {/* TAB: CONFIGURAÇÕES */}
+                    {/* --- CONTEÚDO DA ABA CONFIGURAÇÕES --- */}
                     {tab === 'config' && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in">
-                            <Card className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-enter">
+                            {/* Card Wi-Fi */}
+                            <Card className="flex flex-col gap-6">
                                 <div className="flex items-center gap-3 border-b border-gray-800 pb-4">
-                                    <div className="p-2 bg-primary/10 rounded text-primary"><Icon name="wifi" /></div>
-                                    <div><h3 className="font-bold text-lg">Wi-Fi do Evento</h3><p className="text-xs text-muted">Exibição nas TVs</p></div>
+                                    <div className="p-2.5 bg-primary/10 rounded-lg text-primary"><Icon name="wifi" size={24} /></div>
+                                    <div>
+                                        <h3 className="text-lg font-bold">Conexão Wi-Fi</h3>
+                                        <p className="text-xs text-muted">Exibição nas TVs do evento</p>
+                                    </div>
                                 </div>
-                                <Input label="Nome da Rede (SSID)" value={event.wifiSSID || ''} onChange={e => onUpdate({...event, wifiSSID: e.target.value})} />
-                                <Input label="Senha" value={event.wifiPass || ''} onChange={e => onUpdate({...event, wifiPass: e.target.value})} />
-                                <div>
-                                    <label className="block text-sm text-muted mb-2">QR Code Personalizado</label>
-                                    <UploadBox label="Imagem do Wi-Fi" icon="qr-code" previewUrl={event.wifiImg} onUpload={(url) => onUpdate({...event, wifiImg: url})} />
+                                <div className="space-y-4">
+                                    <Input label="Nome da Rede (SSID)" value={event.wifiSSID || ''} onChange={e => onUpdateEvent({...event, wifiSSID: e.target.value})} placeholder="Ex: FloripaSquare" />
+                                    <Input label="Senha da Rede" value={event.wifiPass || ''} onChange={e => onUpdateEvent({...event, wifiPass: e.target.value})} placeholder="Ex: 123456" />
+                                    <Input label="String QR Code (Opcional)" value={event.wifi || ''} onChange={e => onUpdateEvent({...event, wifi: e.target.value})} placeholder="WIFI:S:Nome;T:WPA;P:Senha;;" />
+                                </div>
+                                <div className="mt-4 pt-4 border-t border-gray-800">
+                                    <label className="block text-xs font-bold text-muted uppercase tracking-widest mb-3">QR Code Personalizado (Imagem)</label>
+                                    <UploadBox label="Arraste imagem do QR Wi-Fi" icon="qr-code" previewUrl={event.wifiImg} onUpload={(url) => onUpdateEvent({...event, wifiImg: url})} />
                                 </div>
                             </Card>
 
-                            <Card className="space-y-6">
+                            {/* Card Fotos */}
+                            <Card className="flex flex-col gap-6">
                                 <div className="flex items-center gap-3 border-b border-gray-800 pb-4">
-                                    <div className="p-2 bg-primary/10 rounded text-primary"><Icon name="camera" /></div>
-                                    <div><h3 className="font-bold text-lg">Galeria de Fotos</h3><p className="text-xs text-muted">Acesso pós check-in</p></div>
-                                </div>
-                                <Input label="Link Externo" value={event.photoUrl || ''} onChange={e => onUpdate({...event, photoUrl: e.target.value})} placeholder="https://" />
-                                <div>
-                                    <label className="block text-sm text-muted mb-2">Imagem de Capa do Botão</label>
-                                    <UploadBox label="Capa Fotos" icon="image" previewUrl={event.photoImg} onUpload={(url) => onUpdate({...event, photoImg: url})} />
-                                </div>
-                                
-                                <div className="pt-6 mt-auto border-t border-gray-800">
-                                    <label className="block text-xs font-bold text-muted uppercase tracking-widest mb-3">Links Públicos</label>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <Button variant="outline" icon="monitor" onClick={() => window.open(`?mode=totem&event=${event.id}`, '_blank')}>Abrir Totem</Button>
-                                        <Button variant="outline" icon="tv" onClick={() => window.open(`?mode=wifi&event=${event.id}`, '_blank')}>Display TV</Button>
+                                    <div className="p-2.5 bg-primary/10 rounded-lg text-primary"><Icon name="camera" size={24} /></div>
+                                    <div>
+                                        <h3 className="text-lg font-bold">Galeria de Fotos</h3>
+                                        <p className="text-xs text-muted">Acesso do convidado após check-in</p>
                                     </div>
+                                </div>
+                                <div className="space-y-4">
+                                    <Input label="Link Externo (URL)" value={event.photoUrl || ''} onChange={e => onUpdateEvent({...event, photoUrl: e.target.value})} placeholder="https://..." />
+                                </div>
+                                <div className="mt-4 pt-4 border-t border-gray-800">
+                                    <label className="block text-xs font-bold text-muted uppercase tracking-widest mb-3">Capa do Botão (Banner)</label>
+                                    <UploadBox label="Arraste capa do botão fotos" icon="image" previewUrl={event.photoImg} onUpload={(url) => onUpdateEvent({...event, photoImg: url})} />
                                 </div>
                             </Card>
                         </div>
                     )}
 
-                    {/* TAB: HISTÓRICO (NOVO) */}
+                    {/* --- CONTEÚDO DA ABA HISTÓRICO --- */}
                     {tab === 'history' && (
-                        <Card className="p-0 overflow-hidden">
+                        <Card className="p-0 overflow-hidden animate-enter">
                             <table className="w-full text-left text-sm text-gray-400">
                                 <thead className="bg-[#111] text-xs font-bold text-white uppercase tracking-wider">
                                     <tr>
-                                        <th className="p-4">Data/Hora</th>
-                                        <th className="p-4">Usuário</th>
-                                        <th className="p-4">Ação</th>
-                                        <th className="p-4">Detalhes</th>
+                                        <th className="p-4 border-b border-border">Data/Hora</th>
+                                        <th className="p-4 border-b border-border">Usuário</th>
+                                        <th className="p-4 border-b border-border">Ação</th>
+                                        <th className="p-4 border-b border-border">Detalhes</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border">
-                                    {historyLogs.map(log => (
+                                    {logs.map(log => (
                                         <tr key={log.id} className="hover:bg-white/5 transition-colors">
-                                            <td className="p-4 whitespace-nowrap">{log.time}</td>
+                                            <td className="p-4 whitespace-nowrap text-gray-500 font-mono text-xs">{log.time}</td>
                                             <td className="p-4 text-white font-medium">{log.user}</td>
-                                            <td className="p-4"><span className="bg-primary/10 text-primary px-2 py-1 rounded text-xs font-bold uppercase">{log.action}</span></td>
-                                            <td className="p-4">{log.details}</td>
+                                            <td className="p-4"><span className="bg-white/5 border border-gray-700 px-2 py-1 rounded text-xs font-bold uppercase">{log.action}</span></td>
+                                            <td className="p-4 text-gray-300">{log.details}</td>
                                         </tr>
                                     ))}
-                                    {historyLogs.length === 0 && <tr><td colSpan="4" className="p-8 text-center text-gray-600">Nenhum registro encontrado.</td></tr>}
+                                    {logs.length === 0 && (
+                                        <tr><td colSpan="4" className="p-8 text-center text-gray-600">Nenhum registro encontrado.</td></tr>
+                                    )}
                                 </tbody>
                             </table>
                         </Card>
@@ -681,52 +798,87 @@
             );
         };
 
-        // --- TELAS PÚBLICAS ---
-
+        // ==================================================================================
+        // 9. TELAS PÚBLICAS (TOTEM, WIFI, GUEST)
+        // ==================================================================================
+        
+        // Tela Totem (Recepção)
         const PublicTotem = ({ event }) => (
-            <div className="h-screen bg-black flex flex-col items-center justify-center p-8 text-center animate-fade-in">
-                <div className="bg-white p-6 rounded-3xl shadow-[0_0_120px_rgba(243,112,33,0.4)] mb-12 transform hover:scale-105 transition-transform duration-500">
+            <div className="h-screen bg-black flex flex-col items-center justify-center p-8 text-center animate-enter">
+                <div className="mb-8 p-4 bg-primary/10 rounded-full animate-bounce"><Icon name="arrow-down" size={40} className="text-primary" /></div>
+                
+                <div className="bg-white p-6 rounded-3xl shadow-[0_0_120px_rgba(243,112,33,0.3)] mb-12 transform hover:scale-105 transition-transform duration-500 cursor-none">
                     <QRCodeCanvas text={window.location.href.replace('totem', 'guest')} />
                 </div>
-                <h1 className="text-6xl font-black text-white mb-4 tracking-tighter">CHECK-IN</h1>
-                <div className="h-1 w-20 bg-primary mb-6"></div>
-                <p className="text-2xl text-gray-400">{event?.name}</p>
-                <p className="text-sm text-gray-600 mt-12 uppercase tracking-widest animate-pulse">Aponte a câmera do seu celular</p>
+                
+                <h1 className="text-7xl font-black text-white mb-6 tracking-tighter">CHECK-IN</h1>
+                <div className="w-24 h-1.5 bg-primary rounded-full mb-8"></div>
+                <p className="text-3xl text-gray-400 font-light">{event?.name}</p>
+                
+                <div className="mt-16 flex items-center gap-3 text-gray-600">
+                    <Icon name="smartphone" />
+                    <span className="text-sm uppercase tracking-widest font-bold">Aponte a câmera do seu celular</span>
+                </div>
             </div>
         );
 
+        // Tela Wifi (TVs do Salão)
         const PublicWifi = ({ event }) => (
-            <div className="h-screen bg-black flex flex-col items-center justify-center text-center p-10 border-[20px] border-[#111]">
-                <h1 className="text-8xl font-black text-white mb-20 tracking-tighter">WI-FI</h1>
-                <div className="flex flex-row gap-20 items-center justify-center">
-                    <div className="bg-white p-4 rounded-2xl shadow-2xl">
-                        {event?.wifiImg ? 
-                            <img src={event.wifiImg} className="w-80 h-80 object-contain" /> : 
-                            <QRCodeCanvas text={event?.wifi} />
-                        }
-                    </div>
-                    <div className="text-left space-y-10">
-                        <div>
-                            <p className="text-gray-500 text-sm uppercase tracking-[0.3em] mb-2 font-bold">REDE / NETWORK</p>
-                            <p className="text-6xl font-bold text-white">{event?.wifiSSID || '---'}</p>
+            <div className="h-screen bg-black flex items-center justify-center p-12 border-[30px] border-[#111]">
+                <div className="w-full max-w-6xl grid grid-cols-2 gap-20 items-center">
+                    
+                    {/* Coluna Esquerda: WI-FI */}
+                    <div className="text-right space-y-12">
+                        <h1 className="text-8xl font-black text-white tracking-tighter mb-4">WI-FI</h1>
+                        
+                        <div className="bg-[#1A1A1A] p-8 rounded-3xl border border-border shadow-2xl inline-block w-full">
+                            <div className="mb-8">
+                                <p className="text-gray-500 text-sm uppercase tracking-[0.4em] mb-3 font-bold">REDE / NETWORK</p>
+                                <p className="text-6xl font-bold text-white tracking-tight">{event?.wifiSSID || '---'}</p>
+                            </div>
+                            <div className="w-full h-px bg-gray-800 mb-8"></div>
+                            <div>
+                                <p className="text-gray-500 text-sm uppercase tracking-[0.4em] mb-3 font-bold">SENHA / PASSWORD</p>
+                                <p className="text-7xl font-black text-primary tracking-widest">{event?.wifiPass || '---'}</p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="text-gray-500 text-sm uppercase tracking-[0.3em] mb-2 font-bold">SENHA / PASSWORD</p>
-                            <p className="text-7xl font-black text-primary">{event?.wifiPass || '---'}</p>
+                    </div>
+
+                    {/* Coluna Direita: QRs */}
+                    <div className="flex flex-col items-center gap-10">
+                        {/* QR WIFI */}
+                        <div className="bg-white p-5 rounded-3xl shadow-2xl relative">
+                            <div className="absolute -top-6 -right-6 bg-primary text-white font-bold px-4 py-2 rounded-lg shadow-lg">CONECTAR</div>
+                            {event?.wifiImg ? <img src={event.wifiImg} className="w-72 h-72 object-contain" /> : <QRCodeCanvas text={event?.wifi} />}
+                        </div>
+
+                        {/* QR FOTOS (Incentivo) */}
+                        <div className="bg-[#1A1A1A] p-6 rounded-3xl border border-gray-700 flex items-center gap-6 w-full max-w-sm">
+                            <div className="bg-white p-2 rounded-xl">
+                                <QRCodeCanvas text={event?.photoUrl || '#'} /> 
+                                {/* Nota: Ajustei o tamanho no componente QRCodeCanvas para ser fixo, aqui visualmente simula menor */}
+                            </div>
+                            <div className="text-left">
+                                <p className="text-white font-bold text-xl leading-tight mb-1">Acesse as<br/>Fotos Agora</p>
+                                <p className="text-primary text-sm font-bold flex items-center gap-1"><Icon name="camera" size={14}/> Galeria Oficial</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         );
 
+        // Tela Guest (Celular)
         const PublicGuest = ({ event }) => {
             const [step, setStep] = useState(1);
             const [name, setName] = useState('');
             const [company, setCompany] = useState('');
 
             const handleConfirm = () => {
-                if(!name) return;
+                if(!name) return alert("Por favor, digite seu nome.");
+                
                 const all = DB.getGuests();
+                // Procura case-insensitive
                 const exists = all.find(g => g.eventId === event.id && g.name.toLowerCase() === name.toLowerCase());
                 
                 if(exists) {
@@ -740,47 +892,55 @@
                     };
                     DB.saveGuests([...all, newG]);
                 }
-                DB.addLog('guest_checkin', `Auto: ${name}`);
+                
+                DB.addLog('guest_checkin', `Auto Check-in: ${name}`);
                 setStep(2);
             };
 
             if(step === 1) return (
-                <div className="h-screen bg-black p-6 flex flex-col justify-center max-w-md mx-auto animate-fade-in">
+                <div className="min-h-screen bg-black p-6 flex flex-col justify-center max-w-md mx-auto animate-enter">
                     <div className="text-center mb-10">
-                        <div className="w-20 h-20 bg-primary/20 rounded-full mx-auto flex items-center justify-center mb-6 text-primary border-2 border-primary"><Icon name="user-check" size={40} /></div>
-                        <h2 className="text-3xl font-bold text-white mb-2">Check-in</h2>
-                        <p className="text-gray-400">{event?.name}</p>
+                        <div className="w-24 h-24 bg-primary/10 rounded-full mx-auto flex items-center justify-center mb-6 text-primary border border-primary/30 shadow-glow"><Icon name="user-check" size={48} /></div>
+                        <h2 className="text-4xl font-black text-white mb-2 tracking-tight">Check-in</h2>
+                        <p className="text-lg text-gray-400">{event?.name}</p>
                     </div>
                     
-                    <div className="space-y-4">
-                        <Input label="Seu Nome Completo" value={name} onChange={e=>setName(e.target.value)} autoFocus placeholder="Ex: João Silva" />
-                        <Input label="Empresa (Opcional)" value={company} onChange={e=>setCompany(e.target.value)} placeholder="Ex: Floripa Square" />
+                    <div className="space-y-5 bg-surface p-6 rounded-2xl border border-border">
+                        <Input label="Seu Nome Completo" value={name} onChange={e=>setName(e.target.value)} autoFocus placeholder="Ex: João da Silva" />
+                        <Input label="Sua Empresa (Opcional)" value={company} onChange={e=>setCompany(e.target.value)} placeholder="Ex: Floripa Square" />
+                        <Button onClick={handleConfirm} className="w-full py-4 text-lg mt-4 shadow-glow" icon="check-circle">CONFIRMAR PRESENÇA</Button>
                     </div>
                     
-                    <Button onClick={handleConfirm} className="w-full py-4 text-lg mt-8 shadow-xl shadow-primary/20">CONFIRMAR PRESENÇA</Button>
+                    <p className="text-center text-gray-600 text-xs mt-8">Floripa Square Eventos</p>
                 </div>
             );
 
             return (
-                <div className="h-screen bg-black p-6 flex flex-col justify-center max-w-md mx-auto text-center animate-fade-in">
-                    <div className="w-20 h-20 bg-green-500/20 rounded-full mx-auto flex items-center justify-center mb-6 text-green-500 border-2 border-green-500"><Icon name="check" size={40} /></div>
+                <div className="min-h-screen bg-black p-6 flex flex-col justify-center max-w-md mx-auto text-center animate-enter">
+                    <div className="w-24 h-24 bg-green-500/10 rounded-full mx-auto flex items-center justify-center mb-6 text-green-500 border border-green-500/30"><Icon name="check" size={48} /></div>
                     <h1 className="text-3xl font-bold text-white mb-2">Bem-vindo(a)!</h1>
-                    <p className="text-gray-400 mb-12">Você está confirmado no evento.</p>
+                    <p className="text-gray-400 mb-10 text-lg">Check-in realizado com sucesso.</p>
 
                     <div className="space-y-6">
-                        {/* BOTÃO FOTOS (DESTAQUE) */}
-                        <a href={event?.photoUrl} target="_blank" className="relative group block w-full bg-white text-black font-black py-6 rounded-2xl flex items-center justify-center gap-3 hover:scale-105 transition-transform shadow-[0_0_40px_rgba(255,255,255,0.3)] overflow-hidden">
-                            {event?.photoImg && <img src={event.photoImg} className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-60 transition-opacity" />}
-                            <div className="relative z-10 flex items-center gap-2"><Icon name="camera" size={24} /> ACESSAR FOTOS</div>
+                        {/* Botão de Fotos (Destaque Principal) */}
+                        <a href={event?.photoUrl} target="_blank" className="relative group block w-full bg-white text-black font-black py-6 rounded-2xl flex items-center justify-center gap-3 hover:scale-105 transition-transform shadow-[0_0_40px_rgba(255,255,255,0.2)] overflow-hidden border-4 border-white">
+                            {event?.photoImg && <img src={event.photoImg} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-70 transition-opacity" />}
+                            <div className="relative z-10 flex items-center gap-2 text-xl"><Icon name="camera" size={28} /> ACESSAR FOTOS</div>
                         </a>
                         
-                        {/* CARD WI-FI */}
+                        {/* Card Wi-Fi */}
                         <div className="bg-[#1A1A1A] border border-[#333] rounded-2xl p-8 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-4 opacity-10"><Icon name="wifi" size={100} /></div>
+                            <div className="absolute -top-4 -right-4 text-primary opacity-5"><Icon name="wifi" size={150} /></div>
                             <div className="relative z-10">
-                                <div className="text-primary font-bold mb-4 flex items-center justify-center gap-2"><Icon name="wifi" /> WI-FI LIBERADO</div>
-                                <div className="bg-black/50 border border-white/10 rounded-lg p-4 mb-2 font-mono text-2xl text-white tracking-widest">{event?.wifiPass || '---'}</div>
-                                <p className="text-xs text-gray-500 uppercase tracking-wider">Senha da Rede</p>
+                                <div className="text-primary font-bold mb-6 flex items-center justify-center gap-2 uppercase tracking-widest text-sm"><Icon name="wifi" /> WI-FI LIBERADO</div>
+                                
+                                <div 
+                                    className="bg-black/50 border border-white/10 rounded-xl p-5 mb-3 cursor-pointer active:scale-95 transition-transform"
+                                    onClick={() => {navigator.clipboard.writeText(event?.wifiPass); alert('Senha copiada!');}}
+                                >
+                                    <div className="font-mono text-3xl text-white tracking-widest">{event?.wifiPass || '---'}</div>
+                                </div>
+                                <p className="text-[10px] text-gray-500 uppercase tracking-wider">Toque na senha para copiar</p>
                             </div>
                         </div>
                     </div>
