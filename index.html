@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Floripa Square Check-in V7 (Nome Normal)</title>
+    <title>Floripa Square Check-in V8 (Fix Impressão)</title>
     
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -12,19 +12,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <style>
-        /* --- DESIGN SYSTEM (FLORIPA SQUARE NIGHT) --- */
+        /* --- ESTILOS VISUAIS (Floripa Square Night) --- */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #000000;
-            color: #ffffff;
-            line-height: 1.6;
-        }
-        :root {
-            --primary: #f37021;
-            --surface: #262626;
-            --border: #404040;
-        }
+        body { font-family: 'Inter', sans-serif; background-color: #000000; color: #ffffff; line-height: 1.6; }
+        :root { --primary: #f37021; --surface: #262626; --border: #404040; }
 
         /* Utils */
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
@@ -33,17 +24,13 @@
         .center { align-items: center; }
         .hidden { display: none !important; }
 
-        /* UI Components */
+        /* Componentes */
         .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
         .btn { padding: 10px 20px; border-radius: 6px; cursor: pointer; border: none; font-weight: bold; color: white; font-size: 14px; transition: 0.2s; }
         .btn:hover { opacity: 0.9; transform: translateY(-1px); }
         .btn-primary { background: var(--primary); }
         .btn-outline { background: transparent; border: 1px solid #666; color: #ccc; }
-        .btn-icon { padding: 8px; font-size: 16px; }
-        
-        input, textarea { 
-            width: 100%; padding: 12px; background: #111; border: 1px solid #444; color: white; border-radius: 6px; margin-bottom: 10px; 
-        }
+        input, textarea { width: 100%; padding: 12px; background: #111; border: 1px solid #444; color: white; border-radius: 6px; margin-bottom: 10px; }
 
         /* Login */
         .login-wrapper { height: 100vh; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle, #222 0%, #000 100%); }
@@ -66,31 +53,57 @@
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 100; display: flex; align-items: center; justify-content: center; }
         .modal-content { background: var(--surface); padding: 30px; border-radius: 12px; width: 100%; max-width: 400px; border: 1px solid var(--border); }
 
-        /* IMPRESSÃO (BEMATECH L42 - 90x35mm) */
+        /* --- CSS DE IMPRESSÃO CORRIGIDO --- */
         @media print {
-            body * { visibility: hidden; }
-            #printable-area, #printable-area * { visibility: visible; }
-            #printable-area {
-                position: absolute; left: 0; top: 0; width: 100%; height: 100%;
-                background: white !important; color: black !important;
-                display: flex !important; flex-direction: column; justify-content: center; align-items: center;
-                text-align: center; margin: 0; padding: 0;
+            /* 1. Remove TUDO do fluxo da página */
+            #root, .app-container, header, .container {
+                display: none !important;
             }
-            @page { size: 90mm 35mm; margin: 0; }
+            
+            /* 2. Reseta o corpo para evitar páginas extras */
+            html, body {
+                margin: 0; padding: 0; height: auto; overflow: hidden; background: white;
+            }
+
+            /* 3. Mostra SÓ a etiqueta */
+            #printable-area {
+                display: flex !important;
+                position: fixed; /* Fixa no topo absoluto */
+                top: 0;
+                left: 0;
+                width: 90mm;
+                height: 35mm;
+                background: white !important;
+                color: black !important;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                text-align: center;
+                z-index: 9999;
+            }
+            
+            #printable-area * {
+                visibility: visible !important;
+            }
+
+            /* Define o tamanho exato da folha para o navegador */
+            @page {
+                size: 90mm 35mm;
+                margin: 0;
+            }
         }
         
-        #printable-area { display: none; width: 90mm; height: 35mm; }
+        #printable-area { display: none; }
         
         .print-name { 
-            font-size: 20pt; 
+            font-size: 18pt; /* Ajustado para caber melhor */
             font-weight: 900; 
             font-family: Arial, sans-serif; 
             line-height: 1.1; 
             margin-bottom: 2mm; 
-            /* REMOVIDO: text-transform: uppercase; -> Agora aceita minúsculas */
         }
         .print-company { 
-            font-size: 11pt; 
+            font-size: 10pt; 
             font-family: Arial, sans-serif; 
         }
 
@@ -107,7 +120,6 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // --- COMPONENTE QR CODE ---
         const QRCodeDisplay = ({ text, size = 200 }) => {
             const canvasRef = useRef();
             useEffect(() => {
@@ -118,16 +130,13 @@
             return <canvas ref={canvasRef} />;
         };
 
-        // --- APP PRINCIPAL ---
         const App = () => {
             const [view, setView] = useState('login');
             const [events, setEvents] = useState([
                 { id: 1, name: 'Lançamento BMW', date: '25/12/2025', wifi: 'WIFI:S:FloripaSquare;T:WPA;P:123;;', photoUrl: 'https://fotos.com' }
             ]);
             const [currentEvent, setCurrentEvent] = useState(null);
-            const [guests, setGuests] = useState([
-                { id: 1, name: 'Carlos CEO', company: 'Coca-Cola', checkedIn: false },
-            ]);
+            const [guests, setGuests] = useState([{ id: 1, name: 'Carlos CEO', company: 'Coca-Cola', checkedIn: false }]);
 
             useEffect(() => {
                 const params = new URLSearchParams(window.location.search);
@@ -166,8 +175,7 @@
                 reader.onload = (e) => {
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
-                    const sheetName = workbook.SheetNames[0];
-                    const sheet = workbook.Sheets[sheetName];
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
                     const json = XLSX.utils.sheet_to_json(sheet);
                     const newGuests = json.map((row, idx) => ({
                         id: Date.now() + idx,
@@ -183,10 +191,7 @@
 
             const handleExportXLSX = () => {
                 const ws = XLSX.utils.json_to_sheet(guests.map(g => ({
-                    Nome: g.name,
-                    Empresa: g.company,
-                    Status: g.checkedIn ? 'PRESENTE' : 'AUSENTE',
-                    Horario: g.time || ''
+                    Nome: g.name, Empresa: g.company, Status: g.checkedIn ? 'PRESENTE' : 'AUSENTE', Horario: g.time || ''
                 })));
                 const wb = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(wb, ws, "Relatorio");
@@ -219,11 +224,8 @@
                             <EventManager 
                                 event={currentEvent} guests={guests}
                                 onBack={() => setView('dashboard')}
-                                onCheckIn={toggleCheckIn}
-                                onPrint={handlePrint}
-                                onAddGuest={handleAddManual}
-                                onImport={handleImportCSV}
-                                onExport={handleExportXLSX}
+                                onCheckIn={toggleCheckIn} onPrint={handlePrint}
+                                onAddGuest={handleAddManual} onImport={handleImportCSV} onExport={handleExportXLSX}
                                 onUpdateEvent={(updated) => {
                                     setEvents(events.map(e => e.id === updated.id ? updated : e));
                                     setCurrentEvent(updated);
@@ -236,6 +238,7 @@
             );
         };
 
+        // SUB-COMPONENTES
         const LoginScreen = ({ onLogin }) => {
             const [email, setEmail] = useState('');
             const [isRegister, setIsRegister] = useState(false);
@@ -270,8 +273,8 @@
                         <div className="flex center"><button className="btn btn-outline" onClick={onBack}>←</button><h3>{event.name}</h3></div>
                     </div>
                     <div className="tabs">
-                        <div className={`tab ${tab === 'list' ? 'active' : ''}`} onClick={() => setTab('list')}>Lista</div>
-                        <div className={`tab ${tab === 'config' ? 'active' : ''}`} onClick={() => setTab('config')}>Configurações</div>
+                        <div className={`tab ${tab === 'list' ? 'active' : ''}`} onClick={() => setTab('list')}>👥 Lista</div>
+                        <div className={`tab ${tab === 'config' ? 'active' : ''}`} onClick={() => setTab('config')}>⚙️ Configurações</div>
                     </div>
                     {tab === 'list' && (
                         <div className="card">
@@ -303,7 +306,7 @@
                             <label>Link Fotos</label><input value={photo} onChange={e=>setPhoto(e.target.value)} />
                             <div className="flex">
                                 <button className="btn btn-primary" onClick={() => onUpdateEvent({...event, wifi, photoUrl: photo})}>Salvar Config</button>
-                                <button className="btn btn-outline" onClick={openTotem}> Abrir Totem</button>
+                                <button className="btn btn-outline" onClick={openTotem}>📺 Abrir Totem</button>
                             </div>
                         </div>
                     )}
