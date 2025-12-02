@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Floripa Square Check-in SaaS (V9.0 - Master Uncut)</title>
+    <title>Floripa Square Check-in SaaS (V13.0 - Full Uncut)</title>
     
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -191,15 +191,14 @@
         // ==================================================================================
         const DB = {
             KEYS: { 
-                USER: 'fs_user_v9', 
-                EVENTS: 'fs_events_v9', 
-                GUESTS: 'fs_guests_v9', 
-                LOGS: 'fs_logs_v9' 
+                USER: 'fs_user_v13', 
+                EVENTS: 'fs_events_v13', 
+                GUESTS: 'fs_guests_v13', 
+                LOGS: 'fs_logs_v13' 
             },
             
             // --- Autenticação ---
             login: (email, pass) => {
-                // Simulação: Aceita qualquer senha '123456' para teste
                 if(pass === '123456') {
                     const user = { 
                         email, 
@@ -213,7 +212,7 @@
             },
             
             signup: (email, pass) => {
-                // Simulação de cadastro bem sucedido (sempre true)
+                // Simulação de cadastro bem sucedido
                 return true;
             },
             
@@ -232,7 +231,6 @@
             
             saveEvents: (data) => { 
                 localStorage.setItem(DB.KEYS.EVENTS, JSON.stringify(data)); 
-                // Dispara evento para sincronizar abas
                 window.dispatchEvent(new Event('db_update')); 
             },
             
@@ -261,7 +259,6 @@
                     details, 
                     time: new Date().toLocaleString('pt-BR') 
                 };
-                // Mantém apenas os últimos 200 logs para não pesar
                 const updatedLogs = [newLog, ...logs].slice(0, 200);
                 localStorage.setItem(DB.KEYS.LOGS, JSON.stringify(updatedLogs));
             }
@@ -271,7 +268,6 @@
         // 5. COMPONENTES DE UI (DESIGN SYSTEM PREMIUM)
         // ==================================================================================
         
-        // Ícone Genérico (Wrapper do Lucide)
         const Icon = ({ name, size=20, className }) => { 
             useEffect(() => {
                 lucide.createIcons();
@@ -279,24 +275,20 @@
             return <i data-lucide={name} width={size} height={size} className={className}></i>; 
         };
 
-        // Cartão Padrão (Dark Surface)
         const Card = ({ children, className, hover = false }) => (
             <div className={`bg-surface border border-border rounded-xl p-6 shadow-card ${hover ? 'hover:border-primary/50 transition-colors duration-300' : ''} ${className}`}>
                 {children}
             </div>
         );
         
-        // Botão Estilizado (Várias Variantes)
         const Button = ({ children, onClick, className, variant='primary', icon, title, ...props }) => {
             const base = "flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 select-none";
-            
             const variants = {
                 primary: "bg-primary text-white hover:bg-primary-hover shadow-lg shadow-orange-900/20 active:scale-95",
                 outline: "bg-transparent border border-gray-600 text-gray-300 hover:border-white hover:text-white hover:bg-white/5",
                 ghost: "text-gray-400 hover:text-white hover:bg-white/5",
                 danger: "bg-red-500/10 text-red-500 border border-red-500/50 hover:bg-red-500/20"
             };
-            
             return (
                 <button 
                     onClick={onClick} 
@@ -310,7 +302,6 @@
             );
         };
 
-        // Input de Texto Estilizado
         const Input = ({ label, ...props }) => (
             <div className="mb-4 w-full">
                 {label && <label className="block text-xs font-bold text-muted mb-2 uppercase tracking-wider">{label}</label>}
@@ -322,7 +313,6 @@
         );
 
         // Componente de Upload com Preview (Drag & Drop)
-        // Separação Visual Clara: Preview da Imagem vs. Botão de Upload
         const UploadBox = ({ label, icon, onUpload, previewUrl }) => {
             const inputRef = useRef();
             
@@ -338,7 +328,6 @@
                         onChange={(e) => {
                             const file = e.target.files[0];
                             if(file) {
-                                // Cria URL temporária para o arquivo
                                 onUpload(URL.createObjectURL(file));
                             }
                         }} 
@@ -369,7 +358,6 @@
             );
         };
 
-        // Gerador de QR Code (Canvas)
         const QRCodeCanvas = ({ text, size = 250 }) => {
             const canvasRef = useRef();
             useEffect(() => { 
@@ -393,13 +381,11 @@
             const [events, setEvents] = useState([]);
             const [currentEvent, setCurrentEvent] = useState(null);
 
-            // Carregamento Inicial e Roteamento
             useEffect(() => {
                 const sync = () => setEvents(DB.getEvents());
                 sync();
                 window.addEventListener('db_update', sync);
 
-                // Lógica de Roteamento via URL
                 const params = new URLSearchParams(window.location.search);
                 const evtId = parseInt(params.get('event'));
                 const mode = params.get('mode');
@@ -409,7 +395,6 @@
                     const evt = allEvents.find(e => e.id === evtId);
                     if (evt) {
                         setCurrentEvent(evt);
-                        // Se for uma das rotas públicas, não exige login
                         if (['totem', 'wifi', 'guest'].includes(mode)) {
                             setView(mode);
                         } else if (user) {
@@ -418,7 +403,6 @@
                             setView('login');
                         }
                     } else {
-                        // Evento não encontrado
                         setView(user ? 'dashboard' : 'login');
                     }
                 } else if (user) {
@@ -430,27 +414,24 @@
                 return () => window.removeEventListener('db_update', sync);
             }, [user]);
 
-            // Handlers de Navegação
             const handleLogin = (u) => { setUser(u); setView('dashboard'); };
             const handleLogout = () => { DB.logout(); setUser(null); setView('login'); };
 
-            // --- VIEW: LOADING ---
             if (view === 'loading') {
                 return <div className="h-screen bg-black flex items-center justify-center text-primary animate-pulse font-bold tracking-widest">CARREGANDO SISTEMA...</div>;
             }
             
-            // --- VIEWS: PÚBLICAS (Sem Shell de Admin) ---
+            // --- ROTAS PÚBLICAS ---
             if (view === 'totem') return <PublicTotem event={currentEvent} />;
             if (view === 'wifi') return <PublicWifi event={currentEvent} />;
             if (view === 'guest') return <PublicGuest event={currentEvent} />;
 
-            // --- VIEWS: ADMIN (Com Header e Container) ---
+            // --- ROTAS ADMIN ---
             return (
                 <div className="min-h-screen bg-black pb-20 selection:bg-primary selection:text-white">
                     {view !== 'login' && (
                         <header className="border-b border-border bg-black/80 backdrop-blur-md sticky top-0 z-50">
                             <div className="container mx-auto px-6 h-20 flex items-center justify-between">
-                                {/* Logo */}
                                 <div className="flex items-center gap-3 group cursor-default">
                                     <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center font-black text-white text-xl shadow-glow group-hover:scale-105 transition-transform">F</div>
                                     <div>
@@ -458,13 +439,11 @@
                                         <span className="text-[10px] text-primary font-bold tracking-[0.2em] uppercase">Event Manager</span>
                                     </div>
                                 </div>
-                                {/* User Menu */}
                                 <div className="flex items-center gap-6">
                                     <div className="hidden md:block text-right">
                                         <p className="text-xs text-muted uppercase tracking-wider font-bold">Usuário</p>
                                         <p className="text-sm font-medium text-white">{user?.email}</p>
                                     </div>
-                                    <div className="h-8 w-px bg-border hidden md:block"></div>
                                     <Button variant="ghost" onClick={handleLogout} className="text-xs hover:bg-red-500/10 hover:text-red-500" icon="log-out">Sair</Button>
                                 </div>
                             </div>
@@ -617,14 +596,10 @@
                         </div>
                     )}
 
-                    {/* Modal Criar Evento */}
                     {showModal && (
                         <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-enter">
                             <Card className="w-full max-w-md bg-[#111] border-border">
-                                <div className="flex justify-between items-center mb-6">
-                                    <h3 className="text-xl font-bold">Novo Evento</h3>
-                                    <button onClick={() => setShowModal(false)} className="text-muted hover:text-white"><Icon name="x" /></button>
-                                </div>
+                                <h3 className="text-xl font-bold mb-6">Novo Evento</h3>
                                 <Input label="Nome do Evento" value={newEvt.name} onChange={e=>setNewEvt({...newEvt, name:e.target.value})} autoFocus placeholder="Ex: Tech Summit 2025" />
                                 <Input label="Data" type="date" value={newEvt.date} onChange={e=>setNewEvt({...newEvt, date:e.target.value})} />
                                 <div className="flex gap-3 mt-8">
@@ -646,6 +621,9 @@
             const [guests, setGuests] = useState([]);
             const [filter, setFilter] = useState('');
             const fileRef = useRef();
+            
+            // Controle de Toggle Híbrido (Fotos) - APENAS para Fotos
+            const [photoMode, setPhotoMode] = useState(event.photoImg ? 'upload' : 'auto');
 
             // Sincronia de Guests
             const refreshGuests = () => {
@@ -716,13 +694,10 @@
 
             const printLabel = (guest) => {
                 if(!guest.checkedIn) toggleCheckIn(guest);
-                
-                // Preenche os dados ocultos para impressão
                 document.getElementById('p-name-1').innerText = guest.name;
                 document.getElementById('p-company-1').innerText = guest.company;
                 document.getElementById('p-name-2').innerText = guest.name;
                 document.getElementById('p-company-2').innerText = guest.company;
-                
                 setTimeout(() => window.print(), 200);
                 DB.addLog('print_label', `Imprimiu: ${guest.name}`);
             };
@@ -769,7 +744,6 @@
                     {/* TAB: LISTA */}
                     {tab === 'list' && (
                         <div className="space-y-6 animate-enter">
-                            {/* Métricas */}
                             <div className="grid grid-cols-2 gap-4">
                                 <Card className="flex flex-col items-center justify-center py-8 relative overflow-hidden">
                                     <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent"></div>
@@ -783,7 +757,6 @@
                                 </Card>
                             </div>
 
-                            {/* Barra de Ferramentas */}
                             <div className="bg-surface p-4 rounded-xl border border-border flex flex-col xl:flex-row gap-4 justify-between items-center shadow-lg">
                                 <div className="relative w-full xl:w-96">
                                     <Icon name="search" className="absolute left-3 top-3.5 text-muted" size={18} />
@@ -796,12 +769,9 @@
                                 <div className="flex gap-2 w-full xl:w-auto overflow-x-auto pb-2 xl:pb-0">
                                     <input type="file" hidden ref={fileRef} onChange={e => handleImport(e.target.files[0])} />
                                     
-                                    {/* BOTÃO NOVO: MODELO */}
-                                    <Button variant="ghost" onClick={handleDownloadTemplate} title="Baixar Modelo de Planilha" icon="file-spreadsheet" className="whitespace-nowrap">Modelo</Button>
-                                    
+                                    <Button variant="ghost" onClick={handleDownloadTemplate} title="Baixar Modelo" icon="file-spreadsheet" className="whitespace-nowrap">Modelo</Button>
                                     <Button variant="outline" onClick={() => fileRef.current.click()} icon="upload" className="whitespace-nowrap">Importar</Button>
                                     <Button variant="outline" onClick={handleExport} icon="download" className="whitespace-nowrap">Exportar</Button>
-                                    
                                     <Button icon="plus" onClick={() => {
                                         const name = prompt("Nome do Convidado:");
                                         if(name) {
@@ -814,13 +784,10 @@
                                 </div>
                             </div>
 
-                            {/* Lista de Cards */}
                             <div className="space-y-3">
                                 {guests.filter(g => g.name.toLowerCase().includes(filter.toLowerCase()) || g.company.toLowerCase().includes(filter.toLowerCase())).map(g => (
                                     <div key={g.id} className="flex items-center justify-between bg-surface border border-border p-5 rounded-xl hover:border-gray-500 transition-all duration-200 group relative overflow-hidden">
-                                        {/* Efeito visual de check-in */}
                                         {g.checkedIn && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>}
-                                        
                                         <div className="pl-2">
                                             <div className="flex items-center gap-3">
                                                 <h4 className={`font-bold text-lg ${g.checkedIn ? 'text-white' : 'text-gray-300'}`}>{g.name}</h4>
@@ -829,7 +796,6 @@
                                             <p className="text-sm text-gray-500">{g.company} {g.role && `• ${g.role}`}</p>
                                         </div>
                                         <div className="flex items-center gap-4">
-                                            {/* Botão Imprimir */}
                                             <button 
                                                 onClick={() => printLabel(g)} 
                                                 className="text-gray-500 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors opacity-50 group-hover:opacity-100" 
@@ -837,8 +803,6 @@
                                             >
                                                 <Icon name="printer" />
                                             </button>
-                                            
-                                            {/* Toggle Switch */}
                                             <button 
                                                 onClick={() => toggleCheckIn(g)}
                                                 className={`w-14 h-8 rounded-full p-1 transition-colors duration-300 ease-in-out ${g.checkedIn ? 'bg-primary' : 'bg-gray-800'}`}
@@ -858,10 +822,11 @@
                         </div>
                     )}
 
-                    {/* --- CONTEÚDO DA ABA CONFIGURAÇÕES --- */}
+                    {/* --- TAB: CONFIGURAÇÕES (REGRAS DE UPLOAD CORRIGIDAS) --- */}
                     {tab === 'config' && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-enter">
-                            {/* Card Wi-Fi */}
+                            
+                            {/* Card Wi-Fi: APENAS UPLOAD + TEXTO (Sem "Gerar Auto") */}
                             <Card className="flex flex-col gap-6">
                                 <div className="flex items-center gap-3 border-b border-gray-800 pb-4">
                                     <div className="p-2.5 bg-primary/10 rounded-lg text-primary"><Icon name="wifi" size={24} /></div>
@@ -873,15 +838,21 @@
                                 <div className="space-y-4">
                                     <Input label="Nome da Rede (SSID)" value={event.wifiSSID || ''} onChange={e => onUpdateEvent({...event, wifiSSID: e.target.value})} placeholder="Ex: FloripaSquare" />
                                     <Input label="Senha da Rede" value={event.wifiPass || ''} onChange={e => onUpdateEvent({...event, wifiPass: e.target.value})} placeholder="Ex: 123456" />
-                                    <Input label="String QR Code (Opcional)" value={event.wifi || ''} onChange={e => onUpdateEvent({...event, wifi: e.target.value})} placeholder="WIFI:S:Nome;T:WPA;P:Senha;;" />
-                                </div>
-                                <div className="mt-4 pt-4 border-t border-gray-800">
-                                    <label className="block text-xs font-bold text-muted uppercase tracking-widest mb-3">QR Code Personalizado (Imagem)</label>
-                                    <UploadBox label="Arraste imagem do QR Wi-Fi" icon="qr-code" previewUrl={event.wifiImg} onUpload={(url) => onUpdateEvent({...event, wifiImg: url})} />
+                                    
+                                    {/* UPLOAD OBRIGATÓRIO DE IMAGEM PARA WI-FI */}
+                                    <div className="mt-4 pt-4 border-t border-gray-800">
+                                        <label className="block text-xs font-bold text-muted uppercase tracking-widest mb-3">Imagem do QR Code Wi-Fi</label>
+                                        <UploadBox 
+                                            label="Arraste sua arte do Wi-Fi aqui" 
+                                            icon="qr-code" 
+                                            previewUrl={event.wifiImg} 
+                                            onUpload={(url) => onUpdateEvent({...event, wifiImg: url})} 
+                                        />
+                                    </div>
                                 </div>
                             </Card>
 
-                            {/* Card Fotos */}
+                            {/* Card Fotos: HÍBRIDO (Gerar ou Upload) */}
                             <Card className="flex flex-col gap-6">
                                 <div className="flex items-center gap-3 border-b border-gray-800 pb-4">
                                     <div className="p-2.5 bg-primary/10 rounded-lg text-primary"><Icon name="camera" size={24} /></div>
@@ -893,15 +864,31 @@
                                 <div className="space-y-4">
                                     <Input label="Link Externo (URL)" value={event.photoUrl || ''} onChange={e => onUpdateEvent({...event, photoUrl: e.target.value})} placeholder="https://..." />
                                 </div>
+                                
+                                {/* Seletor Híbrido */}
                                 <div className="mt-4 pt-4 border-t border-gray-800">
-                                    <label className="block text-xs font-bold text-muted uppercase tracking-widest mb-3">Capa do Botão (Banner)</label>
-                                    <UploadBox label="Arraste capa do botão fotos" icon="image" previewUrl={event.photoImg} onUpload={(url) => onUpdateEvent({...event, photoImg: url})} />
+                                    <div className="flex gap-2 mb-4 p-1 bg-black rounded-lg border border-border">
+                                        <button onClick={()=>setPhotoMode('auto')} className={`flex-1 py-2 text-xs font-bold rounded ${photoMode==='auto'?'bg-primary text-white':'text-muted'}`}>GERAR QR AUTOMÁTICO</button>
+                                        <button onClick={()=>setPhotoMode('upload')} className={`flex-1 py-2 text-xs font-bold rounded ${photoMode==='upload'?'bg-primary text-white':'text-muted'}`}>UPLOAD IMAGEM</button>
+                                    </div>
+                                    
+                                    {photoMode === 'auto' ? (
+                                        <div className="flex justify-center p-6 bg-white rounded-lg border-4 border-dashed border-gray-300">
+                                            <QRCodeCanvas text={event.photoUrl || 'https://'} size={150} />
+                                        </div>
+                                    ) : (
+                                        <UploadBox 
+                                            label="Arraste capa do botão fotos" 
+                                            icon="image" 
+                                            previewUrl={event.photoImg} 
+                                            onUpload={(url) => onUpdateEvent({...event, photoImg: url})} 
+                                        />
+                                    )}
                                 </div>
                             </Card>
                         </div>
                     )}
 
-                    {/* --- CONTEÚDO DA ABA HISTÓRICO --- */}
                     {tab === 'history' && (
                         <Card className="p-0 overflow-hidden animate-enter">
                             <table className="w-full text-left text-sm text-gray-400">
@@ -957,9 +944,7 @@
             </div>
         );
 
-        /* --- DISPLAY TV HÍBRIDO (V7.1 - ATUALIZADO) --- 
-           Layout: Dois QR Codes no meio, Texto embaixo 
-        */
+        /* --- DISPLAY TV (V7.1 - Lado a Lado + Texto) --- */
         const PublicWifi = ({ event }) => (
             <div className="h-screen bg-black flex flex-col justify-between p-12 border-[20px] border-[#111] overflow-hidden">
                 
@@ -974,13 +959,10 @@
                     
                     {/* Bloco Wi-Fi */}
                     <div className="flex flex-col items-center">
-                        <div className="bg-white p-4 rounded-3xl shadow-[0_0_60px_rgba(255,255,255,0.1)] mb-8 transform scale-110">
-                            {event?.wifiImg ? <img src={event.wifiImg} className="w-64 h-64 object-contain" /> : <QRCodeCanvas text={event?.wifi} size={256} />}
+                        <div className="bg-white p-4 rounded-3xl mb-8 transform scale-110 shadow-glow">
+                            {event?.wifiImg ? <img src={event.wifiImg} className="w-64 h-64 object-contain" /> : <div className="p-10 text-black font-bold">SEM IMAGEM</div>}
                         </div>
-                        <div className="flex items-center gap-3 text-primary">
-                            <Icon name="wifi" size={32} />
-                            <span className="text-2xl font-bold tracking-wider">WI-FI GRÁTIS</span>
-                        </div>
+                        <div className="flex gap-3 text-primary"><Icon name="wifi" size={32} /><span className="text-2xl font-bold">WI-FI GRÁTIS</span></div>
                     </div>
 
                     {/* Divisor Vertical */}
@@ -988,13 +970,10 @@
 
                     {/* Bloco Fotos */}
                     <div className="flex flex-col items-center">
-                        <div className="bg-white p-4 rounded-3xl shadow-[0_0_60px_rgba(243,112,33,0.2)] mb-8 transform scale-110">
-                            <QRCodeCanvas text={event?.photoUrl || '#'} size={256} />
+                        <div className="bg-white p-4 rounded-3xl mb-8 transform scale-110 shadow-glow">
+                            {event?.photoImg ? <img src={event.photoImg} className="w-64 h-64 object-contain" /> : <QRCodeCanvas text={event?.photoUrl || '#'} size={256} />}
                         </div>
-                        <div className="flex items-center gap-3 text-white">
-                            <Icon name="camera" size={32} />
-                            <span className="text-2xl font-bold tracking-wider">GALERIA DE FOTOS</span>
-                        </div>
+                        <div className="flex gap-3 text-white"><Icon name="camera" size={32} /><span className="text-2xl font-bold">GALERIA DE FOTOS</span></div>
                     </div>
 
                 </div>
@@ -1014,17 +993,13 @@
             </div>
         );
 
-        // Tela Guest (Celular)
+        /* --- GUEST MOBILE (V9.1 - Botão Texto Exato) --- */
         const PublicGuest = ({ event }) => {
-            const [step, setStep] = useState(1);
-            const [name, setName] = useState('');
-            const [company, setCompany] = useState('');
-
+            const [step, setStep] = useState(1); const [name, setName] = useState(''); const [company, setCompany] = useState('');
+            
             const handleConfirm = () => {
-                if(!name) return alert("Por favor, digite seu nome.");
-                
+                if(!name) return alert("Digite seu nome.");
                 const all = DB.getGuests();
-                // Procura case-insensitive
                 const exists = all.find(g => g.eventId === event.id && g.name.toLowerCase() === name.toLowerCase());
                 
                 if(exists) {
@@ -1065,25 +1040,20 @@
                 <div className="min-h-screen bg-black p-6 flex flex-col justify-center max-w-md mx-auto text-center animate-enter">
                     <div className="w-24 h-24 bg-green-500/10 rounded-full mx-auto flex items-center justify-center mb-6 text-green-500 border border-green-500/30"><Icon name="check" size={48} /></div>
                     <h1 className="text-3xl font-bold text-white mb-2">Bem-vindo(a)!</h1>
-                    <p className="text-gray-400 mb-10 text-lg">Check-in realizado com sucesso.</p>
+                    <p className="text-gray-400 mb-10 text-lg">Check-in realizado.</p>
 
                     <div className="space-y-6">
-                        {/* Botão de Fotos (Destaque Principal) */}
-                        <a href={event?.photoUrl} target="_blank" className="relative group block w-full bg-white text-black font-black py-6 rounded-2xl flex items-center justify-center gap-3 hover:scale-105 transition-transform shadow-[0_0_40px_rgba(255,255,255,0.2)] overflow-hidden border-4 border-white">
+                        {/* Botão de Fotos com Texto Exato */}
+                        <a href={event?.photoUrl} target="_blank" className="relative group block w-full bg-white text-black font-black py-6 px-4 rounded-2xl flex items-center justify-center gap-3 shadow-glow border-4 border-white text-center leading-tight hover:scale-105 transition-transform">
                             {event?.photoImg && <img src={event.photoImg} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-70 transition-opacity" />}
-                            <div className="relative z-10 flex items-center gap-2 text-xl"><Icon name="camera" size={28} /> ACESSAR FOTOS</div>
+                            <div className="relative z-10 text-lg uppercase">CLIQUE AQUI PARA REALIZAR O CADASTRO NO SISTEMA DE FOTOS</div>
                         </a>
                         
-                        {/* Card Wi-Fi */}
+                        {/* Card Wi-Fi (Sem QR, só Senha) */}
                         <div className="bg-[#1A1A1A] border border-[#333] rounded-2xl p-8 relative overflow-hidden">
-                            <div className="absolute -top-4 -right-4 text-primary opacity-5"><Icon name="wifi" size={150} /></div>
                             <div className="relative z-10">
                                 <div className="text-primary font-bold mb-6 flex items-center justify-center gap-2 uppercase tracking-widest text-sm"><Icon name="wifi" /> WI-FI LIBERADO</div>
-                                
-                                <div 
-                                    className="bg-black/50 border border-white/10 rounded-xl p-5 mb-3 cursor-pointer active:scale-95 transition-transform"
-                                    onClick={() => {navigator.clipboard.writeText(event?.wifiPass); alert('Senha copiada!');}}
-                                >
+                                <div className="bg-black/50 border border-white/10 rounded-xl p-5 mb-3 cursor-pointer active:scale-95 transition-transform" onClick={() => {navigator.clipboard.writeText(event?.wifiPass); alert('Senha copiada!');}}>
                                     <div className="font-mono text-3xl text-white tracking-widest">{event?.wifiPass || '---'}</div>
                                 </div>
                                 <p className="text-[10px] text-gray-500 uppercase tracking-wider">Toque na senha para copiar</p>
