@@ -270,8 +270,8 @@
                         <div className="flex center"><button className="btn btn-outline" onClick={onBack}>←</button><h3>{event.name}</h3></div>
                     </div>
                     <div className="tabs">
-                        <div className={`tab ${tab === 'list' ? 'active' : ''}`} onClick={() => setTab('list')}>👥 Lista</div>
-                        <div className={`tab ${tab === 'config' ? 'active' : ''}`} onClick={() => setTab('config')}>⚙️ Configurações</div>
+                        <div className={`tab ${tab === 'list' ? 'active' : ''}`} onClick={() => setTab('list')}>Lista</div>
+                        <div className={`tab ${tab === 'config' ? 'active' : ''}`} onClick={() => setTab('config')}>Configurações</div>
                     </div>
                     {tab === 'list' && (
                         <div className="card">
@@ -303,7 +303,7 @@
                             <label>Link Fotos</label><input value={photo} onChange={e=>setPhoto(e.target.value)} />
                             <div className="flex">
                                 <button className="btn btn-primary" onClick={() => onUpdateEvent({...event, wifi, photoUrl: photo})}>Salvar Config</button>
-                                <button className="btn btn-outline" onClick={openTotem}>📺 Abrir Totem</button>
+                                <button className="btn btn-outline" onClick={openTotem}> Abrir Totem</button>
                             </div>
                         </div>
                     )}
