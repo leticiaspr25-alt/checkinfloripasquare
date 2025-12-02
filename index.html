@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Floripa Square Check-in FINAL</title>
+    <title>Floripa Square Check-in V5 (Final)</title>
     
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -12,7 +12,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <style>
-        /* --- ESTILOS GERAIS (Identidade Megatela) --- */
+        /* --- DESIGN SYSTEM (FLORIPA SQUARE NIGHT) --- */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Inter', sans-serif;
@@ -33,11 +33,11 @@
         .center { align-items: center; }
         .hidden { display: none !important; }
 
-        /* Componentes de UI */
+        /* UI Components */
         .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
-        .btn { padding: 10px 20px; border-radius: 6px; cursor: pointer; border: none; font-weight: bold; color: white; font-size: 14px; }
+        .btn { padding: 10px 20px; border-radius: 6px; cursor: pointer; border: none; font-weight: bold; color: white; font-size: 14px; transition: 0.2s; }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
         .btn-primary { background: var(--primary); }
-        .btn-primary:hover { background: #d95d10; }
         .btn-outline { background: transparent; border: 1px solid #666; color: #ccc; }
         .btn-icon { padding: 8px; font-size: 16px; }
         
@@ -54,10 +54,6 @@
         .tab { padding: 10px 20px; cursor: pointer; color: #888; border-bottom: 3px solid transparent; }
         .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
 
-        /* Modal */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 100; display: flex; align-items: center; justify-content: center; }
-        .modal-content { background: var(--surface); padding: 30px; border-radius: 12px; width: 100%; max-width: 400px; border: 1px solid var(--border); }
-
         /* Totem & Guest */
         .totem-screen { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #000; text-align: center; }
         .qr-frame { background: white; padding: 20px; border-radius: 12px; margin: 30px 0; }
@@ -65,6 +61,10 @@
         .success-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
         .qr-box { background: #1a1a1a; padding: 15px; border-radius: 10px; text-align: center; border: 1px solid #333; }
         .qr-box canvas { width: 100% !important; height: auto !important; }
+
+        /* Modal */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 100; display: flex; align-items: center; justify-content: center; }
+        .modal-content { background: var(--surface); padding: 30px; border-radius: 12px; width: 100%; max-width: 400px; border: 1px solid var(--border); }
 
         /* IMPRESSÃO (BEMATECH L42) */
         @media print {
@@ -108,19 +108,17 @@
 
         // --- APP PRINCIPAL ---
         const App = () => {
-            // Views: login, dashboard, manager, totem, guest
             const [view, setView] = useState('login');
-            // Dados Mockados (Simulando Banco)
+            // Dados Mockados Iniciais
             const [events, setEvents] = useState([
                 { id: 1, name: 'Lançamento BMW', date: '25/12/2025', wifi: 'WIFI:S:FloripaSquare;T:WPA;P:123;;', photoUrl: 'https://fotos.com' }
             ]);
             const [currentEvent, setCurrentEvent] = useState(null);
             const [guests, setGuests] = useState([
                 { id: 1, name: 'Carlos CEO', company: 'Coca-Cola', checkedIn: false },
-                { id: 2, name: 'Ana Diretora', company: 'Floripa Square', checkedIn: true, time: '19:30' }
             ]);
 
-            // Checar URL para rotas diretas (Totem/Guest)
+            // Checar URL para rotas
             useEffect(() => {
                 const params = new URLSearchParams(window.location.search);
                 const mode = params.get('mode');
@@ -135,12 +133,9 @@
                 }
             }, []);
 
-            // --- LÓGICA DE NEGÓCIO ---
+            // --- FUNÇÕES DE LÓGICA ---
 
-            const handleLogin = (email) => {
-                alert('Bem-vindo: ' + email);
-                setView('dashboard');
-            };
+            const handleLogin = (email) => setView('dashboard');
 
             const toggleCheckIn = (id) => {
                 const now = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
@@ -158,44 +153,74 @@
                 setGuests([{...newGuest, id: Date.now(), checkedIn: false}, ...guests]);
             };
 
-            // --- RENDERIZADORES DE TELA ---
+            // IMPORTAÇÃO EXCEL/CSV REAL
+            const handleImportCSV = (file) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const sheet = workbook.Sheets[sheetName];
+                    const json = XLSX.utils.sheet_to_json(sheet);
+                    
+                    const newGuests = json.map((row, idx) => ({
+                        id: Date.now() + idx,
+                        name: row['Nome'] || row['Name'] || 'Sem Nome',
+                        company: row['Empresa'] || row['Company'] || '',
+                        checkedIn: false
+                    }));
+                    
+                    setGuests([...guests, ...newGuests]);
+                    alert(`${newGuests.length} convidados importados!`);
+                };
+                reader.readAsArrayBuffer(file);
+            };
 
+            // EXPORTAÇÃO EXCEL REAL
+            const handleExportXLSX = () => {
+                const ws = XLSX.utils.json_to_sheet(guests.map(g => ({
+                    Nome: g.name,
+                    Empresa: g.company,
+                    Status: g.checkedIn ? 'PRESENTE' : 'AUSENTE',
+                    Horario: g.time || ''
+                })));
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Relatorio");
+                XLSX.writeFile(wb, `${currentEvent.name}_Relatorio.xlsx`);
+            };
+
+            // --- RENDER ---
             if (view === 'login') return <LoginScreen onLogin={handleLogin} />;
             if (view === 'totem') return <TotemScreen event={currentEvent} />;
             if (view === 'guest') return <GuestScreen event={currentEvent} />;
             
-            // Dashboard & Manager compartilham Header
             return (
                 <div>
                     <header style={{background:'#000', borderBottom:'1px solid #333', padding:'15px 20px', display:'flex', justifyContent:'space-between'}}>
                         <div style={{fontSize:20, fontWeight:'bold', color:'white'}}>MEGATELA</div>
                         <button className="btn btn-outline" onClick={() => setView('login')}>Sair</button>
                     </header>
-
                     <div className="container">
                         {view === 'dashboard' && (
                             <div>
                                 <h2 style={{color:'white', marginBottom:20}}>Meus Eventos</h2>
                                 {events.map(ev => (
                                     <div key={ev.id} className="card flex between center">
-                                        <div>
-                                            <h3>{ev.name}</h3>
-                                            <small style={{color:'#888'}}>{ev.date}</small>
-                                        </div>
+                                        <div><h3>{ev.name}</h3><small style={{color:'#888'}}>{ev.date}</small></div>
                                         <button className="btn btn-outline" onClick={() => { setCurrentEvent(ev); setView('manager'); }}>Gerenciar</button>
                                     </div>
                                 ))}
                             </div>
                         )}
-
                         {view === 'manager' && (
                             <EventManager 
-                                event={currentEvent} 
-                                guests={guests}
+                                event={currentEvent} guests={guests}
                                 onBack={() => setView('dashboard')}
                                 onCheckIn={toggleCheckIn}
                                 onPrint={handlePrint}
                                 onAddGuest={handleAddManual}
+                                onImport={handleImportCSV}
+                                onExport={handleExportXLSX}
                                 onUpdateEvent={(updated) => {
                                     setEvents(events.map(e => e.id === updated.id ? updated : e));
                                     setCurrentEvent(updated);
@@ -208,7 +233,7 @@
             );
         };
 
-        // --- SUB-COMPONENTES (TELAS ESPECÍFICAS) ---
+        // --- TELAS SECUNDÁRIAS ---
 
         const LoginScreen = ({ onLogin }) => {
             const [email, setEmail] = useState('');
@@ -218,38 +243,27 @@
                     <div className="login-card">
                         <h2 style={{color:'white', textAlign:'center', marginBottom:5}}>FLORIPA SQUARE</h2>
                         <p style={{color:'var(--primary)', textAlign:'center', marginBottom:20, fontWeight:'bold'}}>CHECK-IN SYSTEM</p>
-                        
-                        <label>Email</label>
-                        <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="admin@floripasquare.com" />
-                        
-                        <label>Senha</label>
-                        <input type="password" placeholder="••••••" />
-                        
+                        <label>Email</label><input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="admin@floripasquare.com" />
+                        <label>Senha</label><input type="password" placeholder="••••••" />
                         {isRegister && <><label>Confirmar Senha</label><input type="password" /></>}
-
-                        <button className="btn btn-primary" style={{width:'100%', marginTop:10}} onClick={() => onLogin(email)}>
-                            {isRegister ? 'CRIAR CONTA' : 'ENTRAR'}
-                        </button>
-                        
-                        <div style={{textAlign:'center', marginTop:15, color:'#888', fontSize:12, cursor:'pointer', textDecoration:'underline'}} onClick={() => setIsRegister(!isRegister)}>
-                            {isRegister ? 'Já tenho conta' : 'Criar nova conta'}
-                        </div>
+                        <button className="btn btn-primary" style={{width:'100%', marginTop:10}} onClick={() => onLogin(email)}>{isRegister ? 'CRIAR CONTA' : 'ENTRAR'}</button>
+                        <div style={{textAlign:'center', marginTop:15, color:'#888', fontSize:12, cursor:'pointer', textDecoration:'underline'}} onClick={() => setIsRegister(!isRegister)}>{isRegister ? 'Já tenho conta' : 'Criar nova conta'}</div>
                     </div>
                 </div>
             );
         };
 
-        const EventManager = ({ event, guests, onBack, onCheckIn, onPrint, onAddGuest, onUpdateEvent }) => {
+        const EventManager = ({ event, guests, onBack, onCheckIn, onPrint, onAddGuest, onImport, onExport, onUpdateEvent }) => {
             const [tab, setTab] = useState('list');
             const [showModal, setShowModal] = useState(false);
             const [search, setSearch] = useState('');
             const [wifi, setWifi] = useState(event.wifi || '');
             const [photo, setPhoto] = useState(event.photoUrl || '');
+            const fileRef = useRef();
 
             const filtered = guests.filter(g => g.name.toLowerCase().includes(search.toLowerCase()));
 
             const openTotem = () => {
-                // Abre em nova aba simulando a rota
                 const url = `?mode=totem&event=${event.id}`;
                 window.open(url, '_blank');
             };
@@ -259,54 +273,44 @@
                     <div className="flex between center" style={{marginBottom:20}}>
                         <div className="flex center"><button className="btn btn-outline" onClick={onBack}>←</button><h3>{event.name}</h3></div>
                     </div>
-
                     <div className="tabs">
                         <div className={`tab ${tab === 'list' ? 'active' : ''}`} onClick={() => setTab('list')}>👥 Lista</div>
                         <div className={`tab ${tab === 'config' ? 'active' : ''}`} onClick={() => setTab('config')}>⚙️ Configurações</div>
                     </div>
-
                     {tab === 'list' && (
                         <div className="card">
-                            <div className="flex between" style={{marginBottom:20}}>
-                                <input placeholder="Buscar..." value={search} onChange={e=>setSearch(e.target.value)} style={{marginBottom:0}} />
+                            <div className="flex between" style={{marginBottom:20, flexWrap:'wrap'}}>
+                                <input placeholder="Buscar..." value={search} onChange={e=>setSearch(e.target.value)} style={{marginBottom:0, maxWidth:300}} />
                                 <div className="flex">
                                     <button className="btn btn-primary" onClick={() => setShowModal(true)}>+ Manual</button>
-                                    <button className="btn btn-outline" onClick={() => alert('Importar CSV clicado')}>Importar CSV</button>
+                                    <button className="btn btn-outline" onClick={() => fileRef.current.click()}>Importar CSV</button>
+                                    <input type="file" hidden ref={fileRef} onChange={(e) => onImport(e.target.files[0])} accept=".csv,.xlsx" />
+                                    <button className="btn btn-outline" onClick={onExport}>Baixar Relatório</button>
                                 </div>
                             </div>
-
                             {filtered.map(g => (
                                 <div key={g.id} style={{display:'flex', justifyContent:'space-between', padding:'10px 0', borderBottom:'1px solid #333'}}>
-                                    <div>
-                                        <div style={{fontWeight:'bold'}}>{g.name}</div>
-                                        <div style={{color:'#888', fontSize:12}}>{g.company}</div>
-                                    </div>
+                                    <div><div style={{fontWeight:'bold'}}>{g.name}</div><div style={{color:'#888', fontSize:12}}>{g.company}</div></div>
                                     <div className="flex center">
                                         {g.checkedIn && <span style={{color:'#4caf50', fontSize:12, marginRight:10}}>CHEGOU {g.time}</span>}
-                                        <button className="btn" style={{background: g.checkedIn ? 'var(--primary)' : '#444'}} onClick={() => onCheckIn(g.id)}>
-                                            {g.checkedIn ? '✓' : 'Check-in'}
-                                        </button>
+                                        <button className="btn" style={{background: g.checkedIn ? 'var(--primary)' : '#444'}} onClick={() => onCheckIn(g.id)}>{g.checkedIn ? '✓' : 'Check-in'}</button>
                                         <button className="btn btn-outline" style={{padding:8}} onClick={() => onPrint(g)}>🖨️</button>
                                     </div>
                                 </div>
                             ))}
                         </div>
                     )}
-
                     {tab === 'config' && (
                         <div className="card">
                             <h4 style={{color:'var(--primary)', marginBottom:20}}>Dados para o Convidado</h4>
-                            <label>Wi-Fi String</label>
-                            <input value={wifi} onChange={e=>setWifi(e.target.value)} />
-                            <label>Link Fotos</label>
-                            <input value={photo} onChange={e=>setPhoto(e.target.value)} />
+                            <label>Wi-Fi String</label><input value={wifi} onChange={e=>setWifi(e.target.value)} />
+                            <label>Link Fotos</label><input value={photo} onChange={e=>setPhoto(e.target.value)} />
                             <div className="flex">
                                 <button className="btn btn-primary" onClick={() => onUpdateEvent({...event, wifi, photoUrl: photo})}>Salvar Config</button>
                                 <button className="btn btn-outline" onClick={openTotem}>📺 Abrir Totem</button>
                             </div>
                         </div>
                     )}
-
                     {showModal && <AddGuestModal onClose={() => setShowModal(false)} onSave={onAddGuest} />}
                 </div>
             );
@@ -331,15 +335,12 @@
         };
 
         const TotemScreen = ({ event }) => {
-            // URL para o guest acessar
             const guestUrl = `${window.location.origin}${window.location.pathname}?mode=guest&event=${event.id}`;
             return (
                 <div className="totem-screen">
                     <h1 style={{fontSize:40, color:'white'}}>CHECK-IN</h1>
                     <h2 style={{color:'var(--primary)'}}>{event.name}</h2>
-                    <div className="qr-frame">
-                        <QRCodeDisplay text={guestUrl} size={300} />
-                    </div>
+                    <div className="qr-frame"><QRCodeDisplay text={guestUrl} size={300} /></div>
                     <p style={{color:'#888'}}>Aponte a câmera para confirmar presença</p>
                 </div>
             );
@@ -348,17 +349,14 @@
         const GuestScreen = ({ event }) => {
             const [step, setStep] = useState(1);
             const [name, setName] = useState('');
-            
             if(step === 1) return (
                 <div className="guest-screen">
                     <h2 style={{color:'var(--primary)', textAlign:'center'}}>CHECK-IN</h2>
                     <p style={{textAlign:'center', marginBottom:30}}>{event.name}</p>
-                    <label>Seu Nome Completo</label>
-                    <input value={name} onChange={e=>setName(e.target.value)} />
+                    <label>Seu Nome Completo</label><input value={name} onChange={e=>setName(e.target.value)} />
                     <button className="btn btn-primary" style={{width:'100%', marginTop:20}} onClick={() => { if(name) setStep(2); }}>CONFIRMAR</button>
                 </div>
             );
-
             return (
                 <div className="guest-screen" style={{textAlign:'center'}}>
                     <h1>Bem-vindos ao<br/>Rooftop Floripa Square</h1>
@@ -366,14 +364,8 @@
                     <div style={{background:'#222', padding:15, borderRadius:12}}>
                         <h4 style={{marginBottom:20}}>Conecte-se e Aproveite</h4>
                         <div className="success-grid">
-                            <div className="qr-box">
-                                <QRCodeDisplay text={event.wifi || 'no-wifi'} size={120} />
-                                <small style={{display:'block', marginTop:10, color:'#aaa'}}>Wi-Fi</small>
-                            </div>
-                            <div className="qr-box">
-                                <QRCodeDisplay text={event.photoUrl || 'no-url'} size={120} />
-                                <small style={{display:'block', marginTop:10, color:'#aaa'}}>Fotos</small>
-                            </div>
+                            <div className="qr-box"><QRCodeDisplay text={event.wifi || 'no-wifi'} size={120} /><small style={{display:'block', marginTop:10, color:'#aaa'}}>Wi-Fi</small></div>
+                            <div className="qr-box"><QRCodeDisplay text={event.photoUrl || 'no-url'} size={120} /><small style={{display:'block', marginTop:10, color:'#aaa'}}>Fotos</small></div>
                         </div>
                     </div>
                 </div>
