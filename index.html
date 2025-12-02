@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Floripa Square Check-in</title>
+    <title>Floripa Square Check-in V3</title>
     
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -11,361 +11,282 @@
     <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
-    <script src="https://unpkg.com/lucide@latest"></script>
-
     <style>
-        /* RESET & BASE */
+        /* --- ESTILOS VISUAIS (Floripa Square Night) --- */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: #000000; /* Preto Absoluto Floripa Square */
+            font-family: 'Inter', sans-serif;
+            background-color: #000000;
             color: #ffffff;
-            line-height: 1.6;
-            -webkit-font-smoothing: antialiased;
         }
 
-        /* LAYOUT & UTILS */
-        .app-container { min-height: 100vh; display: flex; flex-direction: column; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; width: 100%; }
-        .hidden { display: none !important; }
-        
-        /* BRAND COLORS */
         :root {
-            --primary: #f37021; /* Laranja Megatela */
-            --primary-hover: #d95d10;
-            --bg-dark: #000000;
-            --surface: #262626; /* Cinza Chumbo */
-            --text-main: #ffffff;
-            --text-muted: #a3a3a3;
+            --primary: #f37021;
+            --surface: #262626;
             --border: #404040;
         }
 
-        /* LOGIN */
-        .login-wrapper {
-            height: 100vh; display: flex; align-items: center; justify-content: center;
-            background: var(--bg-dark);
-            background-image: radial-gradient(circle at center, #1a1a1a 0%, #000000 70%);
-        }
-        .login-card {
-            background: var(--surface); padding: 40px; border-radius: 12px; width: 100%; max-width: 400px;
-            border: 1px solid var(--border); box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-        }
-        .brand-title { font-size: 28px; font-weight: 800; color: var(--text-main); text-align: center; margin-bottom: 5px; }
-        .brand-subtitle { color: var(--primary); text-align: center; font-size: 14px; font-weight: 600; letter-spacing: 1px; margin-bottom: 30px; text-transform: uppercase; }
+        /* Layout Utils */
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .hidden { display: none; }
+        .flex { display: flex; gap: 10px; }
+        .flex-col { flex-direction: column; }
+        .center { align-items: center; justify-content: center; }
+        .between { justify-content: space-between; }
 
-        /* FORMS & INPUTS */
-        input, select, textarea {
-            width: 100%; padding: 12px; background: #1a1a1a; border: 1px solid var(--border);
-            color: white; border-radius: 6px; margin-bottom: 15px; font-size: 14px;
+        /* Componentes */
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+        .input-dark { 
+            width: 100%; padding: 12px; background: #111; border: 1px solid #444; color: white; border-radius: 6px; margin-bottom: 10px;
         }
-        input:focus { outline: none; border-color: var(--primary); }
-        label { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; display: block; }
+        .btn { padding: 10px 20px; border-radius: 6px; cursor: pointer; border: none; font-weight: bold; color: white; background: var(--surface); }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-outline { background: transparent; border: 1px solid #666; color: #ccc; }
 
-        /* BUTTONS */
-        .btn {
-            padding: 12px 20px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;
-            transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-            font-size: 14px;
-        }
-        .btn-primary { background: var(--primary); color: white; width: 100%; }
-        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
-        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
-        .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
-        .btn-sm { padding: 6px 12px; font-size: 12px; width: auto; }
-        .btn-icon { padding: 8px; border-radius: 4px; background: var(--surface); border: 1px solid var(--border); color: white; cursor: pointer; }
-        .btn-icon:hover { background: var(--primary); border-color: var(--primary); }
+        /* Abas */
+        .tabs { display: flex; border-bottom: 1px solid #444; margin-bottom: 20px; }
+        .tab { padding: 10px 20px; cursor: pointer; color: #888; border-bottom: 3px solid transparent; }
+        .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
 
-        /* HEADER */
-        header { 
-            background: var(--bg-dark); border-bottom: 1px solid var(--border); padding: 15px 30px;
-            display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10;
+        /* Totem Screen */
+        .totem-screen {
+            height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: radial-gradient(circle, #222 0%, #000 100%); text-align: center;
         }
-
-        /* CARDS */
-        .card { background: var(--surface); border-radius: 8px; padding: 20px; border: 1px solid var(--border); margin-bottom: 20px; }
-        .event-card { 
-            border-left: 4px solid var(--primary); cursor: pointer; transition: transform 0.2s;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .event-card:hover { transform: translateX(5px); background: #333; }
-
-        /* GUEST LIST */
-        .guest-item {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 15px; border-bottom: 1px solid #333; transition: background 0.2s;
-        }
-        .guest-item:hover { background: rgba(255,255,255,0.03); }
-        .guest-info h4 { color: white; margin-bottom: 4px; }
-        .guest-info p { color: var(--text-muted); font-size: 12px; }
+        .qr-frame { background: white; padding: 20px; border-radius: 12px; margin: 30px 0; }
         
-        /* STATUS BADGES */
-        .badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
-        .badge-present { background: rgba(76, 175, 80, 0.2); color: #4caf50; border: 1px solid #4caf50; }
-        .badge-absent { background: rgba(255, 255, 255, 0.1); color: #888; border: 1px solid #444; }
-
-        /* TABS */
-        .tabs { display: flex; gap: 20px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
-        .tab { 
-            padding: 10px 0; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; 
-            font-weight: 500; font-size: 14px;
-        }
-        .tab.active { color: var(--primary); border-color: var(--primary); }
-
-        /* PUBLIC PAGE (AUTO CHECK-IN) */
-        .public-page {
-            max-width: 500px; margin: 0 auto; padding: 40px 20px; text-align: center;
-        }
-        .qr-display { margin-top: 20px; padding: 20px; background: white; border-radius: 8px; display: inline-block; }
-
-        /* PRINT STYLES (BEMATECH L42 PRO) */
-        @media print {
-            body * { visibility: hidden; }
-            #printable-area, #printable-area * { visibility: visible; }
-            #printable-area {
-                position: absolute; left: 0; top: 0; width: 100%; height: 100%;
-                background: white !important; color: black !important;
-                display: flex !important; flex-direction: column; justify-content: center; align-items: center;
-                text-align: center; margin: 0; padding: 0;
-            }
-            @page { size: 100mm 50mm; margin: 0; }
-        }
-        
-        /* Etiqueta na tela (escondida, só aparece no print) */
-        #printable-area { display: none; width: 100mm; height: 50mm; }
-        .print-name { font-size: 22pt; font-weight: 900; font-family: Arial, sans-serif; line-height: 1.1; margin-bottom: 5mm; text-transform: uppercase; }
-        .print-company { font-size: 12pt; font-family: Arial, sans-serif; }
+        /* Guest Mobile Screen */
+        .guest-screen { max-width: 480px; margin: 0 auto; padding: 30px 20px; min-height: 100vh; background: #000; }
+        .success-qr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 30px; }
+        .qr-box { background: #1a1a1a; padding: 15px; border-radius: 10px; text-align: center; border: 1px solid #333; }
+        .qr-box canvas { width: 100% !important; height: auto !important; }
+        .qr-label { font-size: 12px; color: #aaa; margin-top: 10px; display: block; }
 
     </style>
 </head>
 <body>
     <div id="root"></div>
 
-    <div id="printable-area">
-        <div class="print-name" id="print-name-target">NOME DO CONVIDADO</div>
-        <div class="print-company" id="print-company-target">EMPRESA</div>
-    </div>
-
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef } = React;
 
-        // --- COMPONENTES ---
-
-        const LoginScreen = ({ onLogin }) => (
-            <div className="login-wrapper">
-                <div className="login-card">
-                    <div className="brand-title">MEGATELA</div>
-                    <div className="brand-subtitle">Floripa Square</div>
-                    <form onSubmit={(e) => { e.preventDefault(); onLogin(); }}>
-                        <label>Email Corporativo</label>
-                        <input type="email" placeholder="admin@floripasquare.com.br" required />
-                        <label>Senha</label>
-                        <input type="password" placeholder="••••••••" required />
-                        <button className="btn btn-primary">ACESSAR SISTEMA</button>
-                    </form>
-                </div>
-            </div>
-        );
-
-        const EventCard = ({ event, onClick }) => (
-            <div className="card event-card" onClick={() => onClick(event)}>
-                <div>
-                    <h3 style={{color: 'white', fontWeight: 'bold'}}>{event.name}</h3>
-                    <span style={{fontSize: '12px', color: '#888'}}>{event.date}</span>
-                </div>
-                <button className="btn btn-outline btn-sm">Gerenciar →</button>
-            </div>
-        );
-
-        const GuestRow = ({ guest, onToggle, onPrint }) => (
-            <div className="guest-item">
-                <div className="guest-info">
-                    <h4>{guest.name}</h4>
-                    <p>{guest.company} • {guest.role || 'Convidado'}</p>
-                </div>
-                <div style={{display: 'flex', gap: '10px', alignItems: 'center'}}>
-                    <span className={`badge ${guest.checkedIn ? 'badge-present' : 'badge-absent'}`}>
-                        {guest.checkedIn ? `CHEGOU ÀS ${guest.checkinTime}` : 'AUSENTE'}
-                    </span>
-                    
-                    {/* Botão Check-in Simples */}
-                    <button 
-                        onClick={() => onToggle(guest)}
-                        className="btn-icon" 
-                        title="Check-in/Check-out"
-                        style={{background: guest.checkedIn ? '#f37021' : ''}}
-                    >
-                        {guest.checkedIn ? '✓' : '○'}
-                    </button>
-
-                    {/* Botão Imprimir (Só aparece se estiver checked-in ou para forçar) */}
-                    <button 
-                        onClick={() => onPrint(guest)}
-                        className="btn-icon"
-                        title="Imprimir Etiqueta"
-                    >
-                        🖨️
-                    </button>
-                </div>
-            </div>
-        );
+        // --- COMPONENTE DE QR CODE ---
+        const QRCodeDisplay = ({ text, size = 200 }) => {
+            const canvasRef = useRef();
+            useEffect(() => {
+                if(canvasRef.current && text) {
+                    QRCode.toCanvas(canvasRef.current, text, { width: size, margin: 1 }, (err) => {
+                        if(err) console.error(err);
+                    });
+                }
+            }, [text, size]);
+            return <canvas ref={canvasRef} />;
+        };
 
         // --- APP PRINCIPAL ---
-
         const App = () => {
-            // Estado Global (Simulando Supabase com LocalStorage)
-            const [view, setView] = useState('login'); // login, dashboard, event-manager, public
-            const [events, setEvents] = useState([]);
+            // Estado Global
+            const [view, setView] = useState('login'); // login, dashboard, manager, totem, guest
+            const [events, setEvents] = useState([
+                { id: 1, name: 'Lançamento BMW', date: '25/12/2025', wifi: 'WIFI:S:FloripaSquare;T:WPA;P:123456;;', photoUrl: 'https://site-fotos.com' }
+            ]);
             const [currentEvent, setCurrentEvent] = useState(null);
-            const [guests, setGuests] = useState([]);
             
-            // Carregar dados iniciais
+            // Checagem de URL para Rotas (Totem vs Convidado)
             useEffect(() => {
-                // Simulando dados do banco
-                const mockEvents = [
-                    { id: 1, name: 'Lançamento BMW Top Car', date: '25/12/2025', slug: 'bmw-launch' },
-                    { id: 2, name: 'Happy Hour Floripa Square', date: '30/12/2025', slug: 'happy-hour' }
-                ];
-                setEvents(mockEvents);
-                
-                // Checar se é URL pública (Simulação de Rota)
                 const params = new URLSearchParams(window.location.search);
-                if (params.get('mode') === 'public') {
-                    const eventId = parseInt(params.get('event'));
-                    const evt = mockEvents.find(e => e.id === eventId);
+                const mode = params.get('mode');
+                const evtId = parseInt(params.get('event'));
+                
+                if (evtId) {
+                    const evt = events.find(e => e.id === evtId);
                     if (evt) {
                         setCurrentEvent(evt);
-                        setView('public');
+                        if (mode === 'totem') setView('totem');
+                        if (mode === 'guest') setView('guest');
                     }
                 }
             }, []);
 
-            // --- LÓGICA DE NEGÓCIO ---
+            // --- TELAS ---
 
-            const handleLogin = () => setView('dashboard');
-
-            const handleSelectEvent = (event) => {
-                setCurrentEvent(event);
-                // Carregar convidados deste evento (Simulação)
-                const mockGuests = [
-                    { id: 1, name: 'Carlos CEO', company: 'Coca-Cola', role: 'Diretor', checkedIn: false },
-                    { id: 2, name: 'Ana Silva', company: 'Floripa Square', role: 'Staff', checkedIn: true, checkinTime: '19:30' }
-                ];
-                setGuests(mockGuests);
-                setView('event-manager');
-            };
-
-            const toggleCheckIn = (guest) => {
-                const now = new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
-                const updatedGuests = guests.map(g => {
-                    if (g.id === guest.id) {
-                        return { ...g, checkedIn: !g.checkedIn, checkinTime: !g.checkedIn ? now : null };
-                    }
-                    return g;
-                });
-                setGuests(updatedGuests);
-            };
-
-            const handlePrint = (guest) => {
-                // 1. Garantir check-in
-                if (!guest.checkedIn) toggleCheckIn(guest);
-
-                // 2. Preencher área de impressão
-                document.getElementById('print-name-target').innerText = guest.name;
-                document.getElementById('print-company-target').innerText = guest.company || '';
-
-                // 3. Chamar impressão
-                setTimeout(() => window.print(), 100);
-            };
-
-            const exportXLSX = () => {
-                const ws = XLSX.utils.json_to_sheet(guests.map(g => ({
-                    Nome: g.name,
-                    Empresa: g.company,
-                    Cargo: g.role,
-                    Status: g.checkedIn ? 'PRESENTE' : 'AUSENTE',
-                    Horario: g.checkinTime || ''
-                })));
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Relatorio");
-                XLSX.writeFile(wb, `${currentEvent.name}_Relatorio.xlsx`);
-            };
-
-            // --- RENDERIZAÇÃO ---
-
-            if (view === 'login') return <LoginScreen onLogin={handleLogin} />;
-
-            if (view === 'public') {
+            // 1. LOGIN
+            if (view === 'login') {
                 return (
-                    <div className="public-page">
-                        <div className="brand-title" style={{marginBottom: 40}}>FLORIPA SQUARE</div>
-                        <h2 style={{color: 'white'}}>Auto Check-in</h2>
-                        <p style={{color: '#888', marginBottom: 30}}>{currentEvent?.name}</p>
-                        
-                        <input type="text" placeholder="Digite seu nome..." />
-                        <button className="btn btn-primary" onClick={() => alert('Bem-vindo! Dirija-se ao elevador.')}>
-                            CONFIRMAR PRESENÇA
-                        </button>
+                    <div className="totem-screen">
+                        <h1 style={{color:'white'}}>FLORIPA SQUARE</h1>
+                        <p style={{color:'var(--primary)', marginBottom:30}}>CHECK-IN SYSTEM</p>
+                        <button className="btn btn-primary" onClick={() => setView('dashboard')}>ACESSAR PAINEL</button>
                     </div>
                 );
             }
 
-            return (
-                <div className="app-container">
-                    <header>
-                        <div className="brand-title" style={{fontSize: 20}}>MEGATELA</div>
-                        <button className="btn btn-outline btn-sm" onClick={() => setView('login')}>Sair</button>
-                    </header>
-
+            // 2. DASHBOARD
+            if (view === 'dashboard') {
+                return (
                     <div className="container">
-                        {view === 'dashboard' && (
-                            <div>
-                                <h2 style={{color: 'white', marginBottom: 20}}>Meus Eventos</h2>
-                                {events.map(ev => <EventCard key={ev.id} event={ev} onClick={handleSelectEvent} />)}
-                            </div>
-                        )}
-
-                        {view === 'event-manager' && (
-                            <div>
-                                <div style={{display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20}}>
-                                    <button className="btn btn-outline btn-sm" onClick={() => setView('dashboard')}>← Voltar</button>
-                                    <h2 style={{color: 'white', margin: 0}}>{currentEvent.name}</h2>
+                        <h2 style={{color:'white', marginBottom:20}}>Meus Eventos</h2>
+                        {events.map(ev => (
+                            <div key={ev.id} className="card flex between center">
+                                <div>
+                                    <h3>{ev.name}</h3>
+                                    <small style={{color:'#888'}}>{ev.date}</small>
                                 </div>
-
-                                <div className="card">
-                                    <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: 20}}>
-                                        <div className="search-box" style={{flex: 1, marginRight: 20}}>
-                                            <input type="text" placeholder="Buscar convidado..." />
-                                        </div>
-                                        <div style={{display: 'flex', gap: 10}}>
-                                            <button className="btn btn-outline" onClick={() => document.getElementById('csv-input').click()}>Importar CSV</button>
-                                            <input type="file" id="csv-input" hidden />
-                                            <button className="btn btn-outline" onClick={exportXLSX}>Exportar Excel</button>
-                                            <a 
-                                                className="btn btn-primary" 
-                                                href={`?mode=public&event=${currentEvent.id}`} 
-                                                target="_blank"
-                                            >
-                                                Abrir Totem Público 🔗
-                                            </a>
-                                        </div>
-                                    </div>
-
-                                    <div style={{borderTop: '1px solid #333'}}>
-                                        {guests.map(g => (
-                                            <GuestRow 
-                                                key={g.id} 
-                                                guest={g} 
-                                                onToggle={toggleCheckIn} 
-                                                onPrint={handlePrint} 
-                                            />
-                                        ))}
-                                    </div>
-                                </div>
+                                <button className="btn btn-outline" onClick={() => { setCurrentEvent(ev); setView('manager'); }}>Gerenciar</button>
                             </div>
-                        )}
+                        ))}
                     </div>
+                );
+            }
+
+            // 3. GERENCIADOR DO EVENTO (ADMIN)
+            if (view === 'manager') {
+                return <EventManager event={currentEvent} onBack={() => setView('dashboard')} onUpdateEvent={(updated) => {
+                    setEvents(events.map(e => e.id === updated.id ? updated : e));
+                    setCurrentEvent(updated);
+                    alert('Configurações salvas!');
+                }} />;
+            }
+
+            // 4. TOTEM (TELA DO COMPUTADOR/TV NA RECEPÇÃO)
+            if (view === 'totem') {
+                // Gera a URL para o celular do convidado
+                // IMPORTANTE: Em produção, isso seria seu-site.com/?mode=guest...
+                // Aqui usamos window.location para funcionar no seu teste local
+                const guestUrl = `${window.location.origin}${window.location.pathname}?mode=guest&event=${currentEvent.id}`;
+                
+                return (
+                    <div className="totem-screen">
+                        <div style={{marginBottom: 40}}>
+                            <h1 style={{fontSize: 48, fontWeight: 900}}>CHECK-IN</h1>
+                            <h2 style={{color: 'var(--primary)', marginTop: 10}}>{currentEvent.name}</h2>
+                        </div>
+                        
+                        <div className="qr-frame">
+                            <QRCodeDisplay text={guestUrl} size={350} />
+                        </div>
+                        
+                        <p style={{color:'#aaa', marginTop: 20}}>Escaneie para confirmar sua presença</p>
+                    </div>
+                );
+            }
+
+            // 5. CONVIDADO (TELA DO CELULAR)
+            if (view === 'guest') {
+                return <GuestFlow event={currentEvent} />;
+            }
+
+            return <div>Carregando...</div>;
+        };
+
+        // --- SUB-COMPONENTES ---
+
+        const EventManager = ({ event, onBack, onUpdateEvent }) => {
+            const [tab, setTab] = useState('list'); // list, config
+            const [wifiStr, setWifiStr] = useState(event.wifi || '');
+            const [photoStr, setPhotoStr] = useState(event.photoUrl || '');
+
+            const handleSaveConfig = () => {
+                onUpdateEvent({ ...event, wifi: wifiStr, photoUrl: photoStr });
+            };
+
+            const openTotem = () => {
+                const url = `?mode=totem&event=${event.id}`;
+                window.open(url, '_blank');
+            };
+
+            return (
+                <div className="container">
+                    <div className="flex between center" style={{marginBottom:20}}>
+                        <button className="btn btn-outline" onClick={onBack}>← Voltar</button>
+                        <h3>{event.name}</h3>
+                    </div>
+
+                    <div className="tabs">
+                        <div className={`tab ${tab === 'list' ? 'active' : ''}`} onClick={() => setTab('list')}>👥 Lista</div>
+                        <div className={`tab ${tab === 'config' ? 'active' : ''}`} onClick={() => setTab('config')}>⚙️ Configurações</div>
+                    </div>
+
+                    {tab === 'list' && (
+                        <div className="card">
+                            <p style={{textAlign:'center', color:'#888', padding:40}}>
+                                (Lista de convidados e check-in manual estariam aqui - igual versão anterior)
+                            </p>
+                            <div style={{textAlign:'center'}}>
+                                <button className="btn btn-primary" onClick={openTotem}>📺 ABRIR TELA DO TOTEM</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {tab === 'config' && (
+                        <div className="card">
+                            <h4 style={{marginBottom:20, color:'var(--primary)'}}>Dados para o Convidado (Pós Check-in)</h4>
+                            
+                            <label>Configuração do Wi-Fi (String ou Texto)</label>
+                            <input className="input-dark" type="text" placeholder="WIFI:S:NomeDaRede;T:WPA;P:Senha123;;" value={wifiStr} onChange={e => setWifiStr(e.target.value)} />
+                            <small style={{color:'#666', display:'block', marginBottom:20}}>Dica: Use formato WIFI:S:Nome;T:WPA;P:Senha;; para conectar automático.</small>
+
+                            <label>Link do App de Fotos</label>
+                            <input className="input-dark" type="text" placeholder="https://..." value={photoStr} onChange={e => setPhotoStr(e.target.value)} />
+
+                            <button className="btn btn-primary" onClick={handleSaveConfig}>SALVAR CONFIGURAÇÕES</button>
+                        </div>
+                    )}
                 </div>
             );
+        };
+
+        const GuestFlow = ({ event }) => {
+            const [step, setStep] = useState(1); // 1 = form, 2 = success
+            const [name, setName] = useState('');
+
+            const handleConfirm = (e) => {
+                e.preventDefault();
+                if(name.trim()) setStep(2);
+            };
+
+            if (step === 1) {
+                return (
+                    <div className="guest-screen">
+                        <div style={{textAlign:'center', marginBottom:40}}>
+                            <h2 style={{color:'var(--primary)'}}>CHECK-IN</h2>
+                            <p>{event.name}</p>
+                        </div>
+                        
+                        <form onSubmit={handleConfirm}>
+                            <label>Qual seu nome completo?</label>
+                            <input className="input-dark" type="text" placeholder="Seu nome aqui" value={name} onChange={e => setName(e.target.value)} required />
+                            <button type="submit" className="btn btn-primary" style={{width:'100%', marginTop:20}}>CONFIRMAR PRESENÇA</button>
+                        </form>
+                    </div>
+                );
+            }
+
+            if (step === 2) {
+                return (
+                    <div className="guest-screen" style={{textAlign:'center'}}>
+                        <h1 style={{fontSize:28, marginBottom:10}}>Bem-vindos ao<br/>Rooftop Floripa Square</h1>
+                        <p style={{color:'#aaa', marginBottom:40}}>Obrigado, {name}!</p>
+
+                        <div style={{background:'#222', padding:10, borderRadius:8, marginBottom:20}}>
+                            <h4 style={{color:'white', marginBottom:10}}>Aproveite o Evento</h4>
+                            
+                            <div className="success-qr-grid">
+                                <div className="qr-box">
+                                    <QRCodeDisplay text={event.wifi || 'wifi-not-configured'} size={120} />
+                                    <span className="qr-label">Conectar Wi-Fi</span>
+                                </div>
+                                <div className="qr-box">
+                                    <QRCodeDisplay text={event.photoUrl || 'url-not-configured'} size={120} />
+                                    <span className="qr-label">Baixar Fotos</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <p style={{fontSize:12, color:'#666'}}>Aponte a câmera para os códigos acima</p>
+                    </div>
+                );
+            }
         };
 
         ReactDOM.render(<App />, document.getElementById('root'));
